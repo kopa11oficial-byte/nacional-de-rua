@@ -21,9 +21,12 @@ export default function Home() {
         </p>
 
         <div className="mt-10 flex w-full max-w-md flex-col gap-3">
-          <button className="rounded-xl bg-yellow-500 px-6 py-4 text-base font-black text-black transition hover:bg-yellow-400">
-            VER RANKING NACIONAL
-          </button>
+         <a
+  href="/ranking"
+  className="rounded-xl bg-yellow-500 px-6 py-4 text-center text-base font-black text-black transition hover:bg-yellow-400"
+>
+  VER RANKING NACIONAL
+</a>
 
           <button className="rounded-xl border border-zinc-700 bg-zinc-950 px-6 py-4 text-base font-bold text-white transition hover:border-zinc-500">
             ENTRAR COMO ORGANIZAÇÃO
