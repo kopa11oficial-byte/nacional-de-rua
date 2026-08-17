@@ -2,15 +2,14 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
       <section className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <p className="mb-4 text-sm font-bold tracking-[0.35em] text-zinc-500">
-          NACIONAL DE RUA
-        </p>
+       <p className="mb-4 text-sm font-bold tracking-[0.35em] text-zinc-500">
+  RANKING NACIONAL
+</p>
 
-        <h1 className="max-w-5xl text-5xl font-black leading-none tracking-tight sm:text-7xl md:text-8xl">
-          RANKING
-          <span className="block text-yellow-500">NACIONAL</span>
-        </h1>
-
+<h1 className="max-w-5xl text-5xl font-black leading-none tracking-tight sm:text-7xl md:text-8xl">
+  NACIONAL
+  <span className="block text-yellow-500">DE RUA</span>
+</h1>
         <p className="mt-6 max-w-xl text-base leading-7 text-zinc-400 sm:text-lg">
           O ranking oficial das rodas de improviso.
           Resultados, percurso, mérito e consistência.
