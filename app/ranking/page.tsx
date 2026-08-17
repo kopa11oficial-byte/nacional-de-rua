@@ -11,19 +11,19 @@ export default function RankingPage() {
           ← VOLTAR
         </a>
 
-        <div className="mt-10">
-          <p className="text-sm font-bold tracking-[0.3em] text-zinc-500">
-            NACIONAL DE RUA
-          </p>
+       <div className="mt-10">
+  <h1 className="text-5xl font-black tracking-tight text-yellow-500 md:text-7xl">
+    NACIONAL DE RUA
+  </h1>
 
-          <h1 className="mt-3 text-5xl font-black">
-            RANKING <span className="text-yellow-500">NACIONAL</span>
-          </h1>
+  <p className="mt-4 text-2xl font-black tracking-tight text-white md:text-4xl">
+    RANKING NACIONAL
+  </p>
 
-          <p className="mt-4 text-zinc-400">
-            ÉPOCA OFICIAL 2026
-          </p>
-        </div>
+  <p className="mt-3 text-zinc-400">
+    ÉPOCA OFICIAL 2026
+  </p>
+</div>
 
         <div className="mt-12 overflow-hidden rounded-xl border border-zinc-800">
 
