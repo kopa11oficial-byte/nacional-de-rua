@@ -24,3 +24,62 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Rankings em ecrãs de telemóvel */
+@media (max-width: 639px) {
+  /* Ranking nacional: seis colunas */
+  .min-w-\[760px\] {
+    min-width: 0;
+  }
+
+  .min-w-\[760px\] > .grid {
+    grid-template-columns: 29px minmax(0, 1fr) 70px 42px 27px 34px;
+    gap: 4px;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .min-w-\[760px\] > .grid.bg-zinc-950 {
+    font-size: 10px;
+  }
+
+  .min-w-\[760px\] > .grid:not(.bg-zinc-950) {
+    font-size: 13px;
+  }
+
+  .min-w-\[760px\] > .grid > :nth-child(2),
+  .min-w-\[760px\] > .grid > :nth-child(3) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .min-w-\[760px\] > .grid > :nth-child(3) {
+    font-size: 11px;
+  }
+
+  /* Ranking de cada roda: cinco colunas */
+  .min-w-\[620px\] {
+    min-width: 0;
+  }
+
+  .min-w-\[620px\] > .grid {
+    grid-template-columns: 36px minmax(0, 1fr) 52px 34px 42px;
+    gap: 6px;
+    align-items: center;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .min-w-\[620px\] > .grid.bg-zinc-950 {
+    font-size: 10px;
+  }
+
+  .min-w-\[620px\] > .grid:not(.bg-zinc-950) {
+    font-size: 13px;
+  }
+
+  .min-w-\[620px\] > .grid > :nth-child(2) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
