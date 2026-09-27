@@ -81,10 +81,12 @@ function PaginaComFundo({
         className="pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/fundo-tijolos.png')" }}
       />
+
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-black/40"
       />
+
       <div
         className={`relative mx-auto w-full ${largura} px-5 py-10 sm:px-6 sm:py-14`}
       >
@@ -136,7 +138,21 @@ export default function ApontamentosPage() {
         );
       }
 
+      const { data: guardado, error: erroApontamentos } =
+        await supabase
+          .from("apontamentos_edicoes")
+          .select("texto")
+          .eq("edicao_id", edicaoId)
+          .maybeSingle();
+
+      if (erroApontamentos) {
+        throw new Error(
+          `Não foi possível carregar os apontamentos: ${erroApontamentos.message}`,
+        );
+      }
+
       setEdicao(data);
+      setApontamentos(guardado?.texto ?? "");
     } catch (erroCarregamento) {
       setErro(
         erroCarregamento instanceof Error
@@ -195,7 +211,7 @@ export default function ApontamentosPage() {
       }
     }
 
-    // Estas variantes são associadas apenas se identificarem um único MC.
+    // Associa variantes apenas se identificarem um único MC.
     for (const variantes of [
       ["KD", "Kd one seven", "kd one se7en", "kd one se7ene"],
       ["toyaro", "toiaro"],
@@ -204,7 +220,6 @@ export default function ApontamentosPage() {
 
       for (const variante of variantes) {
         const mc = mcsPorNome.get(normalizarTexto(variante));
-
         if (mc) encontrados.set(mc.id, mc);
       }
 
@@ -231,6 +246,7 @@ export default function ApontamentosPage() {
 
       const normalizarNome = (nome: string) => {
         const chave = normalizarTexto(nome);
+
         return normalizarTexto(
           mcsPorNome.get(chave)?.nome ?? nome,
         );
@@ -270,6 +286,7 @@ export default function ApontamentosPage() {
         mcsPorNome,
         mcsEmFalta,
       });
+
       setConfirmado(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (erroProcessamento) {
@@ -416,11 +433,12 @@ export default function ApontamentosPage() {
       }
 
       const { error: inserirError } = await supabase.rpc(
-        "confirmar_pontos_edicao",
+        "guardar_resultados_e_apontamentos",
         {
           p_edicao_id: edicao.id,
           p_batalhas: batalhas,
           p_permanencias: permanencias,
+          p_texto: apontamentos,
         },
       );
 
@@ -503,7 +521,8 @@ export default function ApontamentosPage() {
         </p>
 
         <h1 className="mt-2 text-4xl font-black leading-tight drop-shadow-[2px_3px_0_#000] sm:text-5xl">
-          CONFIRMAR <span className="text-yellow-500">RESULTADOS</span>
+          CONFIRMAR{" "}
+          <span className="text-yellow-500">RESULTADOS</span>
         </h1>
 
         <p className="mt-3 text-zinc-200">
@@ -751,7 +770,7 @@ export default function ApontamentosPage() {
       />
 
       <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs font-bold text-zinc-200">
-        <span>COLA O REGISTO COMPLETO DA EDIÇÃO</span>
+        <span>REGISTO COMPLETO DA EDIÇÃO</span>
         <span>{apontamentos.length} CARACTERES</span>
       </div>
 
