@@ -539,55 +539,57 @@ export default function RankingPage() {
   }
 
   return (
-    <main className="relative min-h-screen bg-black text-white">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 bg-black"
-        style={{
-          backgroundImage:
-            "url('/fundo-tijolos.png'), url('/fundo-tijolos.jpg')",
-          backgroundPosition: "center center",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 bg-black/15"
-      />
-
+        <main
+      className="relative min-h-screen bg-black text-[#f5f3ed]"
+      style={{
+        backgroundImage:
+          "linear-gradient(to right, rgba(0,102,0,0.65) 0%, rgba(0,102,0,0.65) 40%, rgba(206,17,38,0.65) 40%, rgba(206,17,38,0.65) 100%), url('/fundo-tijolos.png')",
+        backgroundPosition: "center center",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+      }}
+    >
       <div className="relative mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
         <Link
           href="/"
-          className="text-sm font-black text-yellow-500 hover:text-yellow-400"
+          className="inline-flex min-h-11 items-center rounded-lg border border-[#c9a44c]/40 bg-black/80 px-4 py-2 text-xs font-black tracking-[0.12em] text-[#e5c675] transition-colors hover:border-[#c9a44c] hover:bg-[#087a43] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#e5c675] sm:text-sm"
         >
           ← VOLTAR
         </Link>
 
         <header className="mt-10 sm:mt-12">
-          <p className="text-xs font-bold tracking-[0.3em] text-zinc-200 sm:text-sm">
+          <div
+            aria-hidden="true"
+            className="mb-6 flex h-1 w-24 overflow-hidden"
+          >
+            <span className="w-2/5 bg-[#087a43]" />
+            <span className="w-1 bg-[#c9a44c]" />
+            <span className="flex-1 bg-[#c41626]" />
+          </div>
+
+          <p className="text-xs font-bold tracking-[0.3em] text-[#e5c675] sm:text-sm">
             NACIONAL DE RUA
           </p>
 
-          <h1 className="mt-3 text-4xl font-black leading-[0.95] sm:text-6xl lg:text-7xl">
-            <span>RANKING </span>
-            <span className="text-yellow-500">
+          <h1 className="mt-3 text-4xl font-black leading-[0.95] tracking-tight drop-shadow-[0_3px_8px_rgba(0,0,0,0.8)] sm:text-6xl lg:text-7xl">
+            <span className="text-[#f5f3ed]">RANKING </span>
+            <span className="text-[#e5c675]">
               NACIONAL
             </span>
           </h1>
 
-          <p className="mt-4 text-sm text-zinc-200 sm:text-base">
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-200 sm:text-base">
             {ano === 2026
               ? "Classificação dos testes de 2026. Estes pontos não contam para a época oficial."
               : `Classificação oficial de ${ano}. Os testes de 2026 não entram neste ranking.`}
           </p>
 
-          <div className="mt-8 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-end sm:gap-6">
-            <div>
+          <div className="mt-8 grid gap-5 rounded-xl border border-[#c9a44c]/30 bg-black/85 p-4 shadow-[0_12px_35px_rgba(0,0,0,0.3)] sm:grid-cols-[auto_1fr] sm:items-end sm:gap-6 sm:p-6">
+            <div className="min-w-0">
               <label
                 htmlFor="ano-ranking"
-                className="block text-xs font-black uppercase text-zinc-100"
+                className="block border-l-2 border-[#087a43] pl-3 text-xs font-black uppercase tracking-[0.1em] text-zinc-100"
               >
                 Ano do ranking
               </label>
@@ -598,7 +600,7 @@ export default function RankingPage() {
                 onChange={(event) =>
                   setAno(Number(event.target.value))
                 }
-                className="mt-2 w-full rounded-lg border border-zinc-600 bg-zinc-950 px-4 py-3 text-white sm:w-auto"
+                className="mt-3 w-full min-w-0 rounded-lg border border-[#087a43]/80 bg-[#101713] px-3 py-3 text-sm font-bold text-white transition-colors hover:border-[#c9a44c] focus:border-[#e5c675] focus:outline-none focus:ring-2 focus:ring-[#c9a44c]/30 sm:w-auto sm:px-4"
               >
                 {anosDisponiveis.map((opcao) => (
                   <option key={opcao} value={opcao}>
@@ -610,10 +612,10 @@ export default function RankingPage() {
               </select>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label
                 htmlFor="periodo-ranking"
-                className="block text-xs font-black uppercase text-zinc-100"
+                className="block border-l-2 border-[#c41626] pl-3 text-xs font-black uppercase tracking-[0.1em] text-zinc-100"
               >
                 Classificação
               </label>
@@ -626,7 +628,7 @@ export default function RankingPage() {
                     event.target.value as Periodo,
                   )
                 }
-                className="mt-2 w-full rounded-lg border border-zinc-600 bg-zinc-950 px-4 py-3 text-white"
+                className="mt-3 w-full min-w-0 rounded-lg border border-[#c41626]/80 bg-[#1a1012] px-3 py-3 text-xs font-bold text-white transition-colors hover:border-[#c9a44c] focus:border-[#e5c675] focus:outline-none focus:ring-2 focus:ring-[#c9a44c]/30 sm:px-4 sm:text-sm"
               >
                 <option value="anual">
                   {ano === 2026
@@ -648,7 +650,7 @@ export default function RankingPage() {
             </div>
           </div>
 
-          <p className="mt-5 text-sm text-zinc-200">
+          <p className="mt-5 border-l-2 border-[#c9a44c]/70 bg-black/60 px-4 py-3 text-sm leading-relaxed text-zinc-200">
             {ano === 2026
               ? "Resultados de teste: não dão acesso à Final Nacional de 2027."
               : periodo === "anual"
@@ -663,8 +665,8 @@ export default function RankingPage() {
             periodo === "anual" &&
             finalistas.length === 0 &&
             confirmacaoDisponivel && (
-              <div className="mt-6 rounded-xl border border-yellow-500/50 bg-black/90 p-5">
-                <p className="text-sm text-zinc-200">
+              <div className="mt-6 rounded-xl border border-[#c9a44c]/60 bg-black/90 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                <p className="text-sm leading-relaxed text-zinc-200">
                   ADMINISTRADOR GERAL · Confere os
                   resultados de todas as rodas antes de
                   fechar os 16 apurados. Esta confirmação é
@@ -679,7 +681,7 @@ export default function RankingPage() {
                     aConfirmar ||
                     ranking.length < 16
                   }
-                  className="mt-4 rounded-lg bg-yellow-500 px-5 py-3 font-black text-black disabled:opacity-50"
+                  className="mt-4 w-full rounded-lg border border-[#e5c675] bg-[#c9a44c] px-5 py-3 text-sm font-black text-black transition-colors hover:bg-[#e5c675] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#e5c675] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
                   {aConfirmar
                     ? "A CONFIRMAR..."
@@ -698,7 +700,7 @@ export default function RankingPage() {
           {mensagemConfirmacao && (
             <p
               role="status"
-              className="mt-4 text-sm text-yellow-500"
+              className="mt-4 text-sm text-[#e5c675]"
             >
               {mensagemConfirmacao}
             </p>
@@ -707,9 +709,18 @@ export default function RankingPage() {
 
         <section
           aria-label="Tabela do ranking nacional"
-          className="mt-10 overflow-hidden rounded-xl border border-zinc-700 bg-black/85"
+          className="mt-10 overflow-hidden rounded-xl border border-[#c9a44c]/40 bg-black/90 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
         >
-          <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.5rem_2.75rem] items-center gap-1 border-b border-zinc-700 bg-zinc-950 px-2 py-4 text-[10px] font-black text-zinc-300 sm:grid-cols-[4rem_minmax(0,1fr)_8rem_4.5rem_3.5rem_4.5rem] sm:gap-3 sm:px-5 sm:text-xs lg:grid-cols-[4rem_minmax(0,1fr)_10rem_5rem_4rem_5rem]">
+          <div
+            aria-hidden="true"
+            className="flex h-1 w-full"
+          >
+            <span className="w-2/5 bg-[#087a43]" />
+            <span className="w-1 bg-[#c9a44c]" />
+            <span className="flex-1 bg-[#c41626]" />
+          </div>
+
+          <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.5rem_2.75rem] items-center gap-1 border-b border-[#c9a44c]/40 bg-[#071d13] px-2 py-4 text-[10px] font-black text-[#e5c675] sm:grid-cols-[4rem_minmax(0,1fr)_8rem_4.5rem_3.5rem_4.5rem] sm:gap-3 sm:px-5 sm:text-xs lg:grid-cols-[4rem_minmax(0,1fr)_10rem_5rem_4rem_5rem]">
             <span>POS.</span>
             <span>MC</span>
             <span className="hidden sm:block">
@@ -727,13 +738,13 @@ export default function RankingPage() {
           </div>
 
           {loading && (
-            <div className="px-4 py-6 text-yellow-500 sm:px-5">
+            <div className="px-4 py-6 text-sm font-bold tracking-wider text-[#e5c675] sm:px-5">
               A CARREGAR...
             </div>
           )}
 
           {erro && (
-            <div className="px-4 py-6 font-bold text-red-400 sm:px-5">
+            <div className="border-l-2 border-[#c41626] bg-[#c41626]/10 px-4 py-6 font-bold text-red-300 sm:px-5">
               {erro}
             </div>
           )}
@@ -743,16 +754,22 @@ export default function RankingPage() {
             ranking.map((mc, index) => (
               <div
                 key={mc.mc_id}
-                className="grid grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.5rem_2.75rem] items-center gap-1 border-t border-zinc-800 px-2 py-4 text-xs sm:grid-cols-[4rem_minmax(0,1fr)_8rem_4.5rem_3.5rem_4.5rem] sm:gap-3 sm:px-5 sm:py-5 sm:text-sm lg:grid-cols-[4rem_minmax(0,1fr)_10rem_5rem_4rem_5rem]"
+                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.5rem_2.75rem] items-center gap-1 border-t border-white/10 px-2 py-4 text-xs transition-colors hover:bg-[#087a43]/15 sm:grid-cols-[4rem_minmax(0,1fr)_8rem_4.5rem_3.5rem_4.5rem] sm:gap-3 sm:px-5 sm:py-5 sm:text-sm lg:grid-cols-[4rem_minmax(0,1fr)_10rem_5rem_4rem_5rem] ${
+                  index === 0
+                    ? "bg-[#c9a44c]/10"
+                    : index % 2 === 0
+                      ? "bg-white/[0.025]"
+                      : "bg-transparent"
+                }`}
               >
-                <span className="font-black text-yellow-500">
+                <span className="font-black tabular-nums text-[#e5c675]">
                   {index + 1}º
                 </span>
 
                 <div className="min-w-0">
                   <Link
                     href={`/mcs/${mc.mc_id}`}
-                    className="block min-w-0 break-words font-bold leading-tight transition-colors hover:text-yellow-500"
+                    className="block min-w-0 break-words font-bold leading-tight text-[#f5f3ed] transition-colors hover:text-[#e5c675] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e5c675]"
                   >
                     {mc.nome}
                   </Link>
@@ -763,12 +780,12 @@ export default function RankingPage() {
                       ? finalistas.includes(
                           mc.mc_id,
                         ) && (
-                          <span className="mt-1 block text-[10px] font-bold text-yellow-500">
+                          <span className="mt-1 block border-l-2 border-[#087a43] pl-2 text-[10px] font-bold text-[#e5c675]">
                             FINALISTA CONFIRMADO
                           </span>
                         )
                       : index < 16 && (
-                          <span className="mt-1 block text-[10px] font-bold text-yellow-500">
+                          <span className="mt-1 block border-l-2 border-[#c41626] pl-2 text-[10px] font-bold text-[#e5c675]">
                             TOP 16 PROVISÓRIO
                           </span>
                         ))}
@@ -786,13 +803,15 @@ export default function RankingPage() {
                     .join(" • ") || "—"}
                 </span>
 
-                <span className="text-right font-black">
+                <span className="text-right font-black tabular-nums text-[#e5c675]">
                   {mc.pontos}
                 </span>
-                <span className="text-right font-black text-zinc-200">
+
+                <span className="text-right font-black tabular-nums text-zinc-200">
                   {mc.vitorias20}
                 </span>
-                <span className="text-right font-black text-zinc-200">
+
+                <span className="text-right font-black tabular-nums text-zinc-200">
                   {mc.participacoes}
                 </span>
               </div>
@@ -801,7 +820,7 @@ export default function RankingPage() {
           {!loading &&
             !erro &&
             ranking.length === 0 && (
-              <div className="px-4 py-8 text-zinc-300 sm:px-5">
+              <div className="px-4 py-8 text-sm leading-relaxed text-zinc-300 sm:px-5">
                 {ano === 2026
                   ? "Ainda não existem pontuações nos testes de 2026."
                   : `Ainda não existem pontuações na época oficial de ${ano}.`}
@@ -809,9 +828,20 @@ export default function RankingPage() {
             )}
         </section>
 
-        <p className="mt-10 text-center text-xs tracking-[0.25em] text-zinc-300">
-          MERITOCRACIA É LEI.
-        </p>
+        <div className="mt-10">
+          <div
+            aria-hidden="true"
+            className="mx-auto flex h-px w-40"
+          >
+            <span className="w-2/5 bg-[#087a43]" />
+            <span className="w-6 bg-[#c9a44c]" />
+            <span className="flex-1 bg-[#c41626]" />
+          </div>
+
+          <p className="mt-5 text-center text-xs font-bold tracking-[0.25em] text-[#e5c675]">
+            MERITOCRACIA É LEI.
+          </p>
+        </div>
       </div>
     </main>
   );

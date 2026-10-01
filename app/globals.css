@@ -1,8 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #000000;
+  --background: #080a09;
   --foreground: #ffffff;
+
+  /* Fundo comum: exatamente as camadas da página inicial */
+  --fundo-site:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.12),
+      rgba(0, 0, 0, 0.48)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0, 55, 35, 0.78) 0%,
+      rgba(0, 55, 35, 0.55) 38%,
+      rgba(100, 15, 24, 0.54) 42%,
+      rgba(100, 15, 24, 0.76) 100%
+    ),
+    url("/fundo-tijolos.png");
 }
 
 @theme inline {
@@ -16,6 +32,32 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/*
+ * Fundo comum a todas as páginas.
+ * As prioridades substituem também os fundos inline
+ * anteriormente colocados no ranking.
+ */
+main {
+  min-height: 100vh;
+  background-color: var(--background) !important;
+  background-image: var(--fundo-site) !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  background-blend-mode: normal !important;
+}
+
+/*
+ * Desativa as antigas camadas decorativas de fundo
+ * que sejam filhas diretas do main.
+ * Evita duplicar as cores e o escurecimento.
+ */
+main > div[aria-hidden="true"].pointer-events-none.absolute.inset-0,
+main > div[aria-hidden="true"].pointer-events-none.fixed.inset-0 {
+  display: none !important;
 }
 
 /* Rankings em ecrãs de telemóvel */
