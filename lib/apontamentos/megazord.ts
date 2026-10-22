@@ -1,3 +1,4 @@
+
 import type {
   BatalhaInterpretada,
   ClassificacaoEdicao,
@@ -17,6 +18,7 @@ type BatalhaMegazord = {
 
 const PONTOS_POR_FASE: Record<FaseEdicao, number> = {
   "PRÉ-FASE": 2,
+  "REPESCAGEM": 0,
   "1ª FASE": 2,
   "2ª FASE": 3,
   "SEMI-FINAL": 4,
@@ -25,6 +27,7 @@ const PONTOS_POR_FASE: Record<FaseEdicao, number> = {
 
 const TAMANHO_EQUIPA_POR_FASE: Record<FaseEdicao, number> = {
   "PRÉ-FASE": 2,
+  "REPESCAGEM": 2,
   "1ª FASE": 2,
   "2ª FASE": 3,
   "SEMI-FINAL": 4,
@@ -34,7 +37,7 @@ const TAMANHO_EQUIPA_POR_FASE: Record<FaseEdicao, number> = {
 function limparLinha(linha: string): string {
   return linha
     .trim()
-    .replace(/^[•\*]\s*/, "")
+    .replace(/^[•*]\s*/, "")
     .replace(/\s+/g, " ");
 }
 
@@ -50,13 +53,19 @@ function interpretarFase(linha: string): FaseEdicao | null {
   const texto = normalizarTexto(linha)
     .toUpperCase()
     .replace(/[ªº]/g, "")
-    .replace(/[:_-]/g, " ")
+    .replace(/[:\_-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
   if (/^PRE ?FASE$/.test(texto)) return "PRÉ-FASE";
-  if (/^(1|1A|PRIMEIRA) ?FASE$/.test(texto)) return "1ª FASE";
-  if (/^(2|2A|SEGUNDA) ?FASE$/.test(texto)) return "2ª FASE";
+
+  if (/^(1|1A|PRIMEIRA) ?FASE$/.test(texto)) {
+    return "1ª FASE";
+  }
+
+  if (/^(2|2A|SEGUNDA) ?FASE$/.test(texto)) {
+    return "2ª FASE";
+  }
 
   if (
     /^(SEMI ?FINAL|SEMIFINAL|MEIA ?FINAL|MEIAS ?FINAIS)$/.test(
@@ -66,7 +75,10 @@ function interpretarFase(linha: string): FaseEdicao | null {
     return "SEMI-FINAL";
   }
 
-  if (/^(FINAL|GRANDE ?FINAL)$/.test(texto)) return "FINAL";
+  if (/^(FINAL|GRANDE ?FINAL)$/.test(texto)) {
+    return "FINAL";
+  }
+
   return null;
 }
 
@@ -146,7 +158,8 @@ function interpretarBatalha(
       : equipa2;
 
   const vitoriaSemSofrerPontos =
-    !empate && Math.min(pontosEquipa1, pontosEquipa2) === 0;
+    !empate &&
+    Math.min(pontosEquipa1, pontosEquipa2) === 0;
 
   const batalha: BatalhaInterpretada = {
     fase,
@@ -180,7 +193,9 @@ function registarNome(
   normalizarNome: (nome: string) => string,
 ): string {
   const chave = normalizarNome(nome);
+
   if (chave) nomes.set(chave, nome);
+
   return chave;
 }
 
@@ -191,10 +206,18 @@ function adicionarPontos(
   quantidade: number,
   normalizarNome: (nome: string) => string,
 ): void {
-  const chave = registarNome(nomes, nome, normalizarNome);
+  const chave = registarNome(
+    nomes,
+    nome,
+    normalizarNome,
+  );
+
   if (!chave) return;
 
-  pontos.set(chave, (pontos.get(chave) ?? 0) + quantidade);
+  pontos.set(
+    chave,
+    (pontos.get(chave) ?? 0) + quantidade,
+  );
 }
 
 function adicionarVitoriaSemSofrer(
@@ -203,6 +226,7 @@ function adicionarVitoriaSemSofrer(
   normalizarNome: (nome: string) => string,
 ): void {
   const chave = normalizarNome(nome);
+
   if (!chave) return;
 
   vitoriasSemSofrer.set(
@@ -216,7 +240,9 @@ function contemTodos(
   nomesProcurados: string[],
   normalizarNome: (nome: string) => string,
 ): boolean {
-  const chavesEquipa = new Set(equipa.map(normalizarNome));
+  const chavesEquipa = new Set(
+    equipa.map(normalizarNome),
+  );
 
   return nomesProcurados.every((nome) =>
     chavesEquipa.has(normalizarNome(nome)),
@@ -236,7 +262,8 @@ function adicionarBonusNaFinal(
     (item) =>
       item.fase === "FINAL" &&
       item.batalha.vencedores.some(
-        (vencedor) => normalizarNome(vencedor) === chave,
+        (vencedor) =>
+          normalizarNome(vencedor) === chave,
       ),
   );
 
@@ -262,15 +289,22 @@ function criarClassificacao(
     .map(([chave, nome]) => ({
       nome,
       pontos: pontos.get(chave) ?? 0,
-      vitoriasDoisZero: vitoriasSemSofrer.get(chave) ?? 0,
+      vitoriasDoisZero:
+        vitoriasSemSofrer.get(chave) ?? 0,
     }))
     .sort((a, b) => {
       if (b.pontos !== a.pontos) {
         return b.pontos - a.pontos;
       }
 
-      if (b.vitoriasDoisZero !== a.vitoriasDoisZero) {
-        return b.vitoriasDoisZero - a.vitoriasDoisZero;
+      if (
+        b.vitoriasDoisZero !==
+        a.vitoriasDoisZero
+      ) {
+        return (
+          b.vitoriasDoisZero -
+          a.vitoriasDoisZero
+        );
       }
 
       return a.nome.localeCompare(b.nome, "pt");
@@ -285,10 +319,17 @@ function adicionarNomesDaEquipa(
   normalizarNome: (nome: string) => string,
 ): void {
   for (const nome of equipa) {
-    const chave = registarNome(nomes, nome, normalizarNome);
+    const chave = registarNome(
+      nomes,
+      nome,
+      normalizarNome,
+    );
+
     if (!chave) continue;
 
-    if (!pontos.has(chave)) pontos.set(chave, 0);
+    if (!pontos.has(chave)) {
+      pontos.set(chave, 0);
+    }
 
     if (!vitoriasSemSofrer.has(chave)) {
       vitoriasSemSofrer.set(chave, 0);
@@ -310,7 +351,11 @@ function validarProgressao(
     "FINAL",
   ];
 
-  for (let indice = 1; indice < fases.length; indice += 1) {
+  for (
+    let indice = 1;
+    indice < fases.length;
+    indice += 1
+  ) {
     const faseAnterior = fases[indice - 1];
     const faseAtual = fases[indice];
 
@@ -333,7 +378,8 @@ function validarProgressao(
       continue;
     }
 
-    const equipasJaUtilizadas = new Set<BatalhaMegazord>();
+    const equipasJaUtilizadas =
+      new Set<BatalhaMegazord>();
 
     for (
       let numero = 0;
@@ -346,7 +392,8 @@ function validarProgressao(
         batalhaAtual.equipa1,
         batalhaAtual.equipa2,
       ]) {
-        const nomesNormalizados = equipa.map(normalizarNome);
+        const nomesNormalizados =
+          equipa.map(normalizarNome);
 
         if (
           new Set(nomesNormalizados).size !==
@@ -358,14 +405,15 @@ function validarProgressao(
           continue;
         }
 
-        const batalhaDeOrigem = batalhasAnteriores.find(
-          (anterior) =>
-            anterior.batalha.vencedores
-              .map(normalizarNome)
-              .every((nome) =>
-                nomesNormalizados.includes(nome),
-              ),
-        );
+        const batalhaDeOrigem =
+          batalhasAnteriores.find(
+            (anterior) =>
+              anterior.batalha.vencedores
+                .map(normalizarNome)
+                .every((nome) =>
+                  nomesNormalizados.includes(nome),
+                ),
+          );
 
         if (!batalhaDeOrigem) {
           erros.push(
@@ -376,7 +424,11 @@ function validarProgressao(
           continue;
         }
 
-        if (equipasJaUtilizadas.has(batalhaDeOrigem)) {
+        if (
+          equipasJaUtilizadas.has(
+            batalhaDeOrigem,
+          )
+        ) {
           erros.push(
             `${faseAtual}, batalha ${numero + 1}: ` +
               `a mesma equipa vencedora da ${faseAnterior} ` +
@@ -385,25 +437,35 @@ function validarProgressao(
           continue;
         }
 
-        equipasJaUtilizadas.add(batalhaDeOrigem);
+        equipasJaUtilizadas.add(
+          batalhaDeOrigem,
+        );
 
         const vencedoresAnteriores = new Set(
-          batalhaDeOrigem.batalha.vencedores.map(normalizarNome),
+          batalhaDeOrigem.batalha.vencedores.map(
+            normalizarNome,
+          ),
         );
 
         const mcAcrescentados = equipa.filter(
           (nome) =>
-            !vencedoresAnteriores.has(normalizarNome(nome)),
+            !vencedoresAnteriores.has(
+              normalizarNome(nome),
+            ),
         );
 
         const derrotadosAnteriores = new Set(
-          batalhaDeOrigem.batalha.derrotados.map(normalizarNome),
+          batalhaDeOrigem.batalha.derrotados.map(
+            normalizarNome,
+          ),
         );
 
         if (
           mcAcrescentados.length !== 1 ||
           !derrotadosAnteriores.has(
-            normalizarNome(mcAcrescentados[0] ?? ""),
+            normalizarNome(
+              mcAcrescentados[0] ?? "",
+            ),
           )
         ) {
           erros.push(
@@ -430,10 +492,13 @@ export function processarMegazord(
   } = contexto;
 
   const pontos = new Map<string, number>();
-  const vitoriasSemSofrer = new Map<string, number>();
+  const vitoriasSemSofrer =
+    new Map<string, number>();
   const nomes = new Map<string, string>();
 
-  const batalhasMegazord: BatalhaMegazord[] = [];
+  const batalhasMegazord:
+    BatalhaMegazord[] = [];
+
   const linhasIgnoradas: string[] = [];
 
   const permanenciasPedidas: string[] = [];
@@ -448,9 +513,11 @@ export function processarMegazord(
     const linha = limparLinha(linhaOriginal);
 
     if (!linha) continue;
+
     if (/^MEGAZORD:?$/i.test(linha)) continue;
 
-    const faseInterpretada = interpretarFase(linha);
+    const faseInterpretada =
+      interpretarFase(linha);
 
     if (faseInterpretada) {
       faseAtual = faseInterpretada;
@@ -477,7 +544,11 @@ export function processarMegazord(
         campeoesNaMesmaLinha[1],
         obterNomeOficial,
       ).forEach((nome) => {
-        registarNome(nomes, nome, normalizarNome);
+        registarNome(
+          nomes,
+          nome,
+          normalizarNome,
+        );
       });
 
       continue;
@@ -491,28 +562,40 @@ export function processarMegazord(
 
     if (emPermanencia) {
       permanenciasPedidas.push(
-        ...separarEquipa(linha, obterNomeOficial),
+        ...separarEquipa(
+          linha,
+          obterNomeOficial,
+        ),
       );
       continue;
     }
 
     if (emCampeoes) {
-      separarEquipa(linha, obterNomeOficial).forEach(
-        (nome) => {
-          registarNome(nomes, nome, normalizarNome);
-        },
-      );
+      separarEquipa(
+        linha,
+        obterNomeOficial,
+      ).forEach((nome) => {
+        registarNome(
+          nomes,
+          nome,
+          normalizarNome,
+        );
+      });
+
       continue;
     }
 
-    const batalhaInterpretada = interpretarBatalha(
-      linha,
-      faseAtual,
-      obterNomeOficial,
-    );
+    const batalhaInterpretada =
+      interpretarBatalha(
+        linha,
+        faseAtual,
+        obterNomeOficial,
+      );
 
     if (!batalhaInterpretada) {
-      linhasIgnoradas.push(linhaOriginal.trim());
+      linhasIgnoradas.push(
+        linhaOriginal.trim(),
+      );
       continue;
     }
 
@@ -541,14 +624,20 @@ export function processarMegazord(
     );
 
     if (pontosEquipa1 === pontosEquipa2) {
-      batalhasMegazord.push(batalhaInterpretada);
+      batalhasMegazord.push(
+        batalhaInterpretada,
+      );
       continue;
     }
 
-    const pontosBase = PONTOS_POR_FASE[faseAtual];
+    const pontosBase =
+      PONTOS_POR_FASE[faseAtual];
 
     const vitoriaSemSofrer =
-      Math.min(pontosEquipa1, pontosEquipa2) === 0;
+      Math.min(
+        pontosEquipa1,
+        pontosEquipa2,
+      ) === 0;
 
     for (const vencedor of batalha.vencedores) {
       adicionarPontos(
@@ -587,7 +676,8 @@ export function processarMegazord(
         batalha.pontuacoes.push({
           nome: vencedor,
           pontos: 1,
-          motivo: "vitória sem a equipa adversária pontuar",
+          motivo:
+            "vitória sem a equipa adversária pontuar",
         });
 
         batalha.detalhes.push(
@@ -597,10 +687,16 @@ export function processarMegazord(
     }
 
     for (const derrotado of batalha.derrotados) {
-      registarNome(nomes, derrotado, normalizarNome);
+      registarNome(
+        nomes,
+        derrotado,
+        normalizarNome,
+      );
     }
 
-    batalhasMegazord.push(batalhaInterpretada);
+    batalhasMegazord.push(
+      batalhaInterpretada,
+    );
   }
 
   const batalhaFinal =
@@ -616,13 +712,14 @@ export function processarMegazord(
     ? batalhaFinal.batalha.vencedores
     : [];
 
-  const duplasOriginaisVencedoras = batalhasMegazord
-    .filter(
-      (item) =>
-        item.fase === "1ª FASE" &&
-        item.batalha.vencedores.length === 2,
-    )
-    .map((item) => item.batalha.vencedores);
+  const duplasOriginaisVencedoras =
+    batalhasMegazord
+      .filter(
+        (item) =>
+          item.fase === "1ª FASE" &&
+          item.batalha.vencedores.length === 2,
+      )
+      .map((item) => item.batalha.vencedores);
 
   let duplaFielCampea: string[] | null = null;
 
@@ -660,7 +757,8 @@ export function processarMegazord(
     }
   }
 
-  const derrotadosPrimeiraFase = new Set<string>();
+  const derrotadosPrimeiraFase =
+    new Set<string>();
 
   batalhasMegazord
     .filter(
@@ -668,20 +766,25 @@ export function processarMegazord(
         item.fase === "PRÉ-FASE" ||
         item.fase === "1ª FASE",
     )
-    .flatMap((item) => item.batalha.derrotados)
+    .flatMap(
+      (item) => item.batalha.derrotados,
+    )
     .forEach((nome) => {
       derrotadosPrimeiraFase.add(
         normalizarNome(nome),
       );
     });
 
-  const permanenciasProcessadas = new Set<string>();
+  const permanenciasProcessadas =
+    new Set<string>();
 
   for (const nomePedido of permanenciasPedidas) {
     const chave = normalizarNome(nomePedido);
 
     if (permanenciasProcessadas.has(chave)) {
-      permanenciasIgnoradas.push(`${nomePedido} — nome repetido`);
+      permanenciasIgnoradas.push(
+        `${nomePedido} — nome repetido`,
+      );
       continue;
     }
 
@@ -695,7 +798,8 @@ export function processarMegazord(
       continue;
     }
 
-    const nomeOficial = nomes.get(chave) ?? nomePedido;
+    const nomeOficial =
+      nomes.get(chave) ?? nomePedido;
 
     adicionarPontos(
       pontos,

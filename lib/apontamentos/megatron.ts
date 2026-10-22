@@ -1,3 +1,4 @@
+
 import type {
   BatalhaInterpretada,
   ClassificacaoEdicao,
@@ -24,6 +25,7 @@ type ResultadoIndividual = {
 
 const PONTOS_POR_FASE: Record<FaseEdicao, number> = {
   "PRÉ-FASE": 2,
+  "REPESCAGEM": 0,
   "1ª FASE": 2,
   "2ª FASE": 3,
   "SEMI-FINAL": 4,
@@ -46,7 +48,7 @@ function interpretarFase(linha: string): FaseEdicao | null {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toUpperCase()
-    .replace(/[:_-]/g, " ")
+    .replace(/[:\_-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -405,7 +407,6 @@ export function processarMegatron(
           doisZero.set(chave, doisZero.get(chave) ?? 0);
         }
       });
-
       continue;
     }
 
@@ -473,7 +474,6 @@ export function processarMegatron(
 
     if (derrotado) {
       const chaveDerrotado = normalizarNome(derrotado);
-
       nomes.set(chaveDerrotado, derrotado);
     }
 
@@ -512,11 +512,13 @@ export function processarMegatron(
 
       if (batalha) {
         batalha.bonusDoisZero = true;
+
         batalha.pontuacoes.push({
           nome,
           pontos: 1,
           motivo: "vitória perfeita do trio por 3-0",
         });
+
         batalha.detalhes.push(
           `${nome}: vitória perfeita do trio por 3-0 (+1)`,
         );

@@ -1,6 +1,8 @@
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
+import SuportesFlutuantes from "./components/SuportesFlutuantes";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,7 +35,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-black text-white">
-        {children}
+        <div className="min-w-0 flex-1 pb-28 xl:px-32 xl:pb-0">
+          {children}
+        </div>
+
+        <SuportesFlutuantes />
       </body>
     </html>
   );

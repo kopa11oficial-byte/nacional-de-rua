@@ -135,6 +135,14 @@ export function processarApontamentos(
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
+    if (/^vencedor\b/i.test(linhaSemAcentos)) {
+      const nome = linhaSemAcentos
+        .replace(/^vencedor\b\s*:?\s*/i, "")
+        .trim();
+
+      return nome ? `Campeao ${nome}` : "Campeao";
+    }
+
     if (/^campeao\b/i.test(linhaSemAcentos)) {
       return original.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }

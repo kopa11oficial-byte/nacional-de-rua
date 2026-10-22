@@ -1,0 +1,155 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { supabase } from "../../../lib/supabase";
+
+type PedirAcessoMCProps = {
+  mcId: string;
+};
+
+export function PedirAcessoMC({ mcId }: PedirAcessoMCProps) {
+  const [aberto, setAberto] = useState(false);
+  const [email, setEmail] = useState("");
+  const [aEnviar, setAEnviar] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function enviarPedido(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+
+    if (aEnviar) return;
+
+    setAEnviar(true);
+    setErro("");
+
+    const { error } = await supabase.rpc("pedir_acesso_perfil_mc", {
+      p_mc_id: mcId,
+      p_email: email.trim(),
+    });
+
+    setAEnviar(false);
+
+    if (error) {
+      setErro(error.message || "Não foi possível enviar o pedido.");
+      return;
+    }
+
+    setEnviado(true);
+  }
+
+  function fecharCaixa() {
+    if (aEnviar) return;
+
+    setAberto(false);
+    setErro("");
+
+    if (enviado) {
+      setEmail("");
+      setEnviado(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg border border-[#e8c76c] px-5 py-3 text-xs font-black text-[#e8c76c] transition hover:bg-[#e8c76c] hover:text-black"
+      >
+        PEDIR ACESSO A ESTE PERFIL
+      </button>
+
+      {aberto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onMouseDown={(evento) => {
+            if (evento.target === evento.currentTarget) {
+              fecharCaixa();
+            }
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-pedir-acesso-mc"
+            className="w-full max-w-md rounded-2xl border border-[#e8c76c]/60 bg-[#101010] p-6 text-white shadow-2xl"
+          >
+            <h2
+              id="titulo-pedir-acesso-mc"
+              className="text-xl font-black text-[#e8c76c]"
+            >
+              PEDIR ACESSO AO PERFIL
+            </h2>
+
+            {enviado ? (
+              <>
+                <p className="mt-4 text-sm leading-relaxed text-zinc-200">
+                  Pedido enviado. O suporte irá analisar o acesso a este
+                  perfil e contactar-te pelo email indicado.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={fecharCaixa}
+                  className="mt-6 w-full rounded-lg bg-[#e8c76c] px-5 py-3 text-sm font-black text-black hover:bg-yellow-300"
+                >
+                  FECHAR
+                </button>
+              </>
+            ) : (
+              <form onSubmit={enviarPedido}>
+                <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+                  Indica o teu email para pedir acesso à edição deste perfil.
+                </p>
+
+                <label
+                  htmlFor="email-pedido-acesso-mc"
+                  className="mt-5 block text-sm font-bold"
+                >
+                  EMAIL
+                </label>
+
+                <input
+                  id="email-pedido-acesso-mc"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  maxLength={320}
+                  value={email}
+                  onChange={(evento) => setEmail(evento.target.value)}
+                  placeholder="o.teu@email.com"
+                  className="mt-2 w-full rounded-lg border border-zinc-600 bg-black px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-[#e8c76c]"
+                />
+
+                {erro && (
+                  <p role="alert" className="mt-3 text-sm text-red-300">
+                    {erro}
+                  </p>
+                )}
+
+                <div className="mt-6 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={fecharCaixa}
+                    disabled={aEnviar}
+                    className="min-h-11 flex-1 rounded-lg border border-zinc-600 px-4 py-3 text-sm font-bold text-zinc-200 hover:border-zinc-400 disabled:opacity-50"
+                  >
+                    CANCELAR
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={aEnviar || !email.trim()}
+                    className="min-h-11 flex-1 rounded-lg bg-[#e8c76c] px-4 py-3 text-sm font-black text-black hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {aEnviar ? "A ENVIAR..." : "ENVIAR PEDIDO"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
+    </>
+  );
+}

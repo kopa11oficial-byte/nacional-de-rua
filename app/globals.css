@@ -1,10 +1,41 @@
+
 @import "tailwindcss";
 
+/* =====================================================
+   NACIONAL DE RUA — IMIP
+   SISTEMA DE IDENTIDADE VISUAL
+
+   Portugal · Rua · Competição · Mérito
+   ===================================================== */
+
 :root {
+  /* Cores base */
+
   --background: #080a09;
   --foreground: #ffffff;
 
-  /* Fundo comum: exatamente as camadas da página inicial */
+  --imip-carvao: #101713;
+  --imip-preto: #080a09;
+  --imip-verde: #087a43;
+  --imip-verde-escuro: #003923;
+  --imip-vermelho: #b82535;
+  --imip-vermelho-escuro: #701622;
+  --imip-dourado: #d6b56d;
+  --imip-dourado-claro: #f0d58e;
+  --imip-marfim: #f0e6d1;
+  --imip-cinza: #b9bbb5;
+
+  /* Estrutura */
+
+  --imip-borda: rgba(214, 181, 109, 0.35);
+  --imip-superficie: rgba(9, 17, 12, 0.9);
+  --imip-superficie-clara: rgba(240, 230, 209, 0.08);
+
+  --imip-raio: 10px;
+  --imip-largura: 1600px;
+
+  /* Fundo português original */
+
   --fundo-site:
     linear-gradient(
       180deg,
@@ -24,25 +55,70 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-imip-carvao: var(--imip-carvao);
+  --color-imip-verde: var(--imip-verde);
+  --color-imip-vermelho: var(--imip-vermelho);
+  --color-imip-dourado: var(--imip-dourado);
+  --color-imip-marfim: var(--imip-marfim);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* =====================================================
+   BASE GLOBAL
+   ===================================================== */
+
+html {
+  min-width: 0;
+  scroll-padding-top: 24px;
 }
 
-/*
- * Fundo comum a todas as páginas.
- * As prioridades substituem também os fundos inline
- * anteriormente colocados no ranking.
- */
+body {
+  min-width: 0;
+  min-height: 100vh;
+
+  margin: 0;
+
+  background: var(--background);
+  color: var(--foreground);
+
+  font-family: Arial, Helvetica, sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--imip-dourado);
+  color: var(--imip-preto);
+}
+
+/* Foco de teclado acessível */
+
+:focus-visible {
+  outline-color: var(--imip-dourado);
+  outline-offset: 3px;
+}
+
+/* =====================================================
+   FUNDO COMUM EXISTENTE
+
+   Preservado nesta fase para não alterar
+   inesperadamente os rankings e outras páginas.
+
+   Quando cada página receber a nova identidade,
+   poderemos substituir esta regra por fundos
+   específicos sem afetar as restantes.
+   ===================================================== */
+
 main {
   min-height: 100vh;
+
   background-color: var(--background) !important;
   background-image: var(--fundo-site) !important;
+
   background-position: center center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -50,26 +126,374 @@ main {
   background-blend-mode: normal !important;
 }
 
-/*
- * Desativa as antigas camadas decorativas de fundo
- * que sejam filhas diretas do main.
- * Evita duplicar as cores e o escurecimento.
- */
+/* Evita a duplicação das antigas camadas de fundo */
+
 main > div[aria-hidden="true"].pointer-events-none.absolute.inset-0,
 main > div[aria-hidden="true"].pointer-events-none.fixed.inset-0 {
   display: none !important;
 }
 
-/* Rankings em ecrãs de telemóvel */
+/* =====================================================
+   IDENTIDADE — TÍTULOS
+
+   Usar nas páginas que vamos renovar.
+
+   Letras fortes, mas nunca esmagadas.
+   ===================================================== */
+
+.imip-titulo {
+  max-width: 100%;
+
+  margin: 0;
+
+  color: var(--imip-marfim);
+
+  font-family:
+    Impact,
+    "Arial Black",
+    Arial,
+    sans-serif;
+
+  font-size: clamp(2.2rem, 5vw, 5rem);
+  font-weight: 900;
+
+  line-height: 1.12;
+  letter-spacing: 0.025em;
+
+  text-transform: uppercase;
+
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.imip-titulo-dourado {
+  color: var(--imip-dourado);
+}
+
+.imip-titulo-vermelho {
+  color: var(--imip-vermelho);
+}
+
+.imip-titulo-verde {
+  color: #32b574;
+}
+
+/* Pequenas identificações acima dos títulos */
+
+.imip-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  color: var(--imip-dourado);
+
+  font-size: 11px;
+  font-weight: 900;
+
+  letter-spacing: 0.14em;
+  line-height: 1.5;
+
+  text-transform: uppercase;
+}
+
+.imip-etiqueta::before {
+  content: "";
+
+  display: block;
+  flex: 0 0 30px;
+
+  height: 4px;
+
+  background: var(--imip-vermelho);
+}
+
+/* =====================================================
+   IDENTIDADE — SEÇÕES
+   ===================================================== */
+
+.imip-secao {
+  position: relative;
+
+  width: 100%;
+
+  padding:
+    clamp(48px, 6vw, 96px)
+    clamp(16px, 4vw, 64px);
+}
+
+.imip-conteudo {
+  width: 100%;
+  max-width: var(--imip-largura);
+
+  margin-inline: auto;
+}
+
+.imip-secao-escura {
+  background: var(--imip-carvao);
+  color: var(--imip-marfim);
+}
+
+.imip-secao-papel {
+  background: var(--imip-marfim);
+  color: var(--imip-carvao);
+}
+
+/* Faixa portuguesa para separar conteúdos */
+
+.imip-faixa {
+  display: flex;
+
+  width: 100%;
+  height: 5px;
+
+  overflow: hidden;
+}
+
+.imip-faixa::before,
+.imip-faixa::after {
+  content: "";
+
+  display: block;
+  height: 100%;
+}
+
+.imip-faixa::before {
+  width: 45%;
+  background: var(--imip-verde);
+}
+
+.imip-faixa::after {
+  width: 55%;
+  background: var(--imip-vermelho);
+}
+
+/* =====================================================
+   IDENTIDADE — CARTÕES
+
+   Para rodas, MCs, competições e conteúdos.
+   ===================================================== */
+
+.imip-cartao {
+  position: relative;
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  border: 1px solid var(--imip-borda);
+  border-radius: var(--imip-raio);
+
+  background: var(--imip-superficie);
+
+  color: var(--imip-marfim);
+
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.2);
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.imip-cartao:hover {
+  border-color: var(--imip-dourado);
+
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.32);
+}
+
+.imip-cartao-titulo {
+  color: var(--imip-marfim);
+
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-weight: 900;
+
+  letter-spacing: 0.025em;
+  line-height: 1.25;
+
+  text-transform: uppercase;
+}
+
+.imip-cartao-texto {
+  color: var(--imip-cinza);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* =====================================================
+   IDENTIDADE — BOTÕES
+   ===================================================== */
+
+.imip-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 44px;
+
+  gap: 8px;
+
+  padding: 11px 20px;
+
+  border: 2px solid transparent;
+  border-radius: 4px;
+
+  cursor: pointer;
+
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+
+  letter-spacing: 0.055em;
+  line-height: 1.3;
+
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
+}
+
+.imip-botao-principal {
+  background: var(--imip-dourado);
+  color: var(--imip-preto);
+}
+
+.imip-botao-principal:hover {
+  background: var(--imip-dourado-claro);
+}
+
+.imip-botao-contorno {
+  border-color: var(--imip-dourado);
+
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--imip-marfim);
+}
+
+.imip-botao-contorno:hover {
+  background: var(--imip-dourado);
+  color: var(--imip-preto);
+}
+
+.imip-botao-vermelho {
+  background: var(--imip-vermelho);
+  color: #ffffff;
+}
+
+.imip-botao-vermelho:hover {
+  background: #d33146;
+}
+
+/* =====================================================
+   IDENTIDADE — RANKINGS E TABELAS
+
+   Estilos preparados para os novos componentes.
+   Não alteram automaticamente as tabelas atuais.
+   ===================================================== */
+
+.imip-tabela {
+  width: 100%;
+
+  border: 1px solid var(--imip-borda);
+  border-radius: var(--imip-raio);
+
+  overflow: hidden;
+
+  background: rgba(5, 10, 7, 0.92);
+}
+
+.imip-tabela-cabecalho {
+  background: var(--imip-carvao);
+
+  color: var(--imip-dourado);
+
+  font-size: 11px;
+  font-weight: 900;
+
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.imip-tabela-linha {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  color: var(--imip-marfim);
+}
+
+.imip-tabela-linha:last-child {
+  border-bottom: 0;
+}
+
+.imip-tabela-linha:hover {
+  background: rgba(214, 181, 109, 0.07);
+}
+
+.imip-pontos {
+  color: var(--imip-dourado);
+
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =====================================================
+   IDENTIDADE — FOTOGRAFIA REAL
+
+   Moldura editorial para fotografias da comunidade.
+   Não altera as imagens originais.
+   ===================================================== */
+
+.imip-fotografia {
+  position: relative;
+
+  overflow: hidden;
+
+  border: 4px solid var(--imip-marfim);
+
+  background: var(--imip-carvao);
+
+  box-shadow:
+    8px 8px 0 rgba(0, 0, 0, 0.35);
+}
+
+.imip-fotografia img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =====================================================
+   REGRAS EXISTENTES — RANKING EM TELEMÓVEL
+
+   Mantidas para preservar a apresentação
+   e os dados das páginas atuais.
+   ===================================================== */
+
 @media (max-width: 639px) {
+
   /* Ranking nacional: seis colunas */
+
   .min-w-\[760px\] {
     min-width: 0;
   }
 
   .min-w-\[760px\] > .grid {
-    grid-template-columns: 29px minmax(0, 1fr) 70px 42px 27px 34px;
+    grid-template-columns:
+      29px
+      minmax(0, 1fr)
+      70px
+      42px
+      27px
+      34px;
+
     gap: 4px;
+
     padding-right: 10px;
     padding-left: 10px;
   }
@@ -93,14 +517,23 @@ main > div[aria-hidden="true"].pointer-events-none.fixed.inset-0 {
   }
 
   /* Ranking de cada roda: cinco colunas */
+
   .min-w-\[620px\] {
     min-width: 0;
   }
 
   .min-w-\[620px\] > .grid {
-    grid-template-columns: 36px minmax(0, 1fr) 52px 34px 42px;
+    grid-template-columns:
+      36px
+      minmax(0, 1fr)
+      52px
+      34px
+      42px;
+
     gap: 6px;
+
     align-items: center;
+
     padding-right: 12px;
     padding-left: 12px;
   }
@@ -116,5 +549,33 @@ main > div[aria-hidden="true"].pointer-events-none.fixed.inset-0 {
   .min-w-\[620px\] > .grid > :nth-child(2) {
     min-width: 0;
     overflow-wrap: anywhere;
+  }
+}
+
+/* =====================================================
+   ACESSIBILIDADE E DESEMPENHO
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .imip-cartao,
+  .imip-botao {
+    transition: none;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Evita problemas de desempenho do fundo fixo
+     em navegadores móveis. */
+
+  main {
+    background-attachment: scroll !important;
+  }
+
+  .imip-etiqueta {
+    letter-spacing: 0.08em;
+  }
+
+  .imip-cartao-texto {
+    font-size: 13px;
   }
 }

@@ -1,49 +1,46 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# ==========================================
+# IMIP - NACIONAL DE RUA
+# Protecao do repositorio GitHub
+# ==========================================
 
-# testing
-/coverage
+# Dependencias
+/node_modules/
 
-# next.js
+# Next.js
 /.next/
 /out/
+/build/
+/dist/
+*.tsbuildinfo
+next-env.d.ts
 
-# production
-/build
+# Variaveis de ambiente e credenciais
+.env
+.env.*
+!.env.example
 
-# misc
-.DS_Store
-*.pem
+# Vercel
+.vercel/
 
-# debug
+# OpenNext / Cloudflare
+.open-next/
+
+# Wrangler
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# Copias de seguranca e arquivos
+*.zip
+nacional-de-rua-perfil-publico/
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# OpenNext
-.open-next
-
-# wrangler files
-.wrangler
-.dev.vars*
-!.dev.vars.example
+# Ficheiros temporarios
+*.tmp
+*.bak

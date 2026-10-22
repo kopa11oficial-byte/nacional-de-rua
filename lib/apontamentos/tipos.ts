@@ -1,3 +1,4 @@
+
 export type FormatoEdicao =
   | "normal"
   | "wildcards"
@@ -8,6 +9,7 @@ export type FormatoEdicao =
 export type FaseEdicao =
   | "PRÉ-FASE"
   | "1ª FASE"
+  | "REPESCAGEM"
   | "2ª FASE"
   | "SEMI-FINAL"
   | "FINAL";

@@ -1,3 +1,4 @@
+
 import type {
   BatalhaInterpretada,
   ClassificacaoEdicao,
@@ -14,83 +15,96 @@ type ResultadoLido = {
   pontos2: number;
 };
 
-function normalizarTexto(texto: string) {
+function normalizarTexto(texto: string): string {
   return texto
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[ªº.:[\]()]/g, "")
+    .replace(/[ªº.:*()[\]]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function retirarNumeroInicial(linha: string) {
+function retirarNumeroInicial(linha: string): string {
   return linha.replace(/^\s*\d+\s*[-.)]\s*/, "").trim();
 }
 
 function reconhecerFase(linha: string): FaseEdicao | null {
-  const texto = normalizarTexto(linha);
+  const texto = normalizarTexto(linha)
+    .replace(/[-_–—]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  if (
-    texto === "pre fase" ||
-    texto === "pre-fase" ||
-    texto === "pre eliminatoria"
-  ) {
+  if (["pre fase", "pre eliminatoria"].includes(texto)) {
     return "PRÉ-FASE";
   }
 
-  if (
-    texto === "1 fase" ||
-    texto === "1- fase" ||
-    texto === "primeira fase"
-  ) {
+  if (["1 fase", "primeira fase"].includes(texto)) {
     return "1ª FASE";
   }
 
   if (
-    texto === "2 fase" ||
-    texto === "2- fase" ||
-    texto === "segunda fase"
+    [
+      "repescagem",
+      "repescagem 1 round",
+      "repescagem um round",
+    ].includes(texto)
   ) {
+    return "REPESCAGEM";
+  }
+
+  if (["2 fase", "segunda fase"].includes(texto)) {
     return "2ª FASE";
   }
 
   if (
-    texto === "semi" ||
-    texto === "semis" ||
-    texto === "meia final" ||
-    texto === "meias finais" ||
-    texto === "semi-final"
+    [
+      "semi",
+      "semis",
+      "semifinal",
+      "semifinais",
+      "semi final",
+      "semi finais",
+      "meia final",
+      "meias finais",
+    ].includes(texto)
   ) {
     return "SEMI-FINAL";
   }
 
-  if (texto === "final" || texto === "batalha final") {
+  if (["final", "batalha final"].includes(texto)) {
     return "FINAL";
   }
 
   return null;
 }
 
-function reconhecerPermanencia(linha: string) {
-  const texto = normalizarTexto(linha);
-
-  return (
-    texto === "permanencia" ||
-    texto === "permanencias" ||
-    texto === "pontos extra" ||
-    texto === "ponto extra" ||
-    texto === "ficaram ate ao fim" ||
-    texto === "permaneceram ate ao fim"
-  );
+function reconhecerPermanencia(linha: string): boolean {
+  return [
+    "permanencia",
+    "permanencias",
+    "pontos extra",
+    "ponto extra",
+    "ponto de permanencia",
+    "pontos de permanencia",
+    "ficaram ate ao fim",
+    "permaneceram ate ao fim",
+  ].includes(normalizarTexto(linha));
 }
 
-function reconhecerVencedorEdicao(linha: string) {
-  const resultado = linha.match(
-    /^\s*(?:vencedor|vencedora|campeao|campea)\s*[:\-]?\s*(.+?)\s*$/i,
+function reconhecerVencedorEdicao(
+  linha: string,
+): string | null {
+  const semAcentos = linha
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const resultado = semAcentos.match(
+    /^(?:vencedor(?:a|es|as)?|campeao|campea|campeoes|winner(?:s)?)(?=$|[\s:–—-])\s*[:–—-]?\s*(.*)$/i,
   );
 
-  return resultado?.[1]?.trim() || null;
+  return resultado ? resultado[1].trim() : null;
 }
 
 function separarNomes(texto: string): string[] {
@@ -100,14 +114,34 @@ function separarNomes(texto: string): string[] {
     .filter(Boolean);
 }
 
-function pontosDaFase(fase: FaseEdicao) {
-  if (fase === "2ª FASE") return 3;
-  if (fase === "SEMI-FINAL") return 4;
-  if (fase === "FINAL") return 5;
-  return 2;
+function pontosDaFase(fase: FaseEdicao): number {
+  switch (fase) {
+    case "PRÉ-FASE":
+      return 0;
+
+    case "1ª FASE":
+      return 2;
+
+    case "REPESCAGEM":
+      return 2;
+
+    case "2ª FASE":
+      return 3;
+
+    case "SEMI-FINAL":
+      return 4;
+
+    case "FINAL":
+      return 5;
+
+    default:
+      return 0;
+  }
 }
 
-function interpretarBatalha(linha: string): ResultadoLido | null {
+function interpretarBatalha(
+  linha: string,
+): ResultadoLido | null {
   const limpa = retirarNumeroInicial(linha)
     .replace(/\s+/g, " ")
     .trim();
@@ -117,54 +151,60 @@ function interpretarBatalha(linha: string): ResultadoLido | null {
     criar: (resultado: RegExpMatchArray) => ResultadoLido;
   }> = [
     {
-      regex: /^(.+?)\s+vs\.?\s+(.+?)\s+(\d+)\s*[-–—xX:]\s*(\d+)$/i,
-      criar: (resultado) => ({
-        mc1: resultado[1].trim(),
-        pontos1: Number(resultado[3]),
-        mc2: resultado[2].trim(),
-        pontos2: Number(resultado[4]),
+      regex:
+        /^(.+?)\s+vs\.?\s+(.+?)\s+(\d+)\s*[-–—xX:]\s*(\d+)$/i,
+      criar: (r) => ({
+        mc1: r[1].trim(),
+        pontos1: Number(r[3]),
+        mc2: r[2].trim(),
+        pontos2: Number(r[4]),
       }),
     },
     {
-      regex: /^(.+?)\s+(\d+)\s+vs\.?\s+(.+?)\s+(\d+)$/i,
-      criar: (resultado) => ({
-        mc1: resultado[1].trim(),
-        pontos1: Number(resultado[2]),
-        mc2: resultado[3].trim(),
-        pontos2: Number(resultado[4]),
+      regex:
+        /^(.+?)\s+(\d+)\s+vs\.?\s+(.+?)\s+(\d+)$/i,
+      criar: (r) => ({
+        mc1: r[1].trim(),
+        pontos1: Number(r[2]),
+        mc2: r[3].trim(),
+        pontos2: Number(r[4]),
       }),
     },
     {
-      regex: /^(.+?)\s+(\d+)\s+vs\.?\s+(\d+)\s+(.+)$/i,
-      criar: (resultado) => ({
-        mc1: resultado[1].trim(),
-        pontos1: Number(resultado[2]),
-        mc2: resultado[4].trim(),
-        pontos2: Number(resultado[3]),
+      regex:
+        /^(.+?)\s+(\d+)\s+vs\.?\s+(\d+)\s+(.+)$/i,
+      criar: (r) => ({
+        mc1: r[1].trim(),
+        pontos1: Number(r[2]),
+        mc2: r[4].trim(),
+        pontos2: Number(r[3]),
       }),
     },
     {
-      regex: /^(.+?)\s*[-:]\s*(\d+)\s+vs\.?\s+(.+?)\s*[-:]\s*(\d+)$/i,
-      criar: (resultado) => ({
-        mc1: resultado[1].trim(),
-        pontos1: Number(resultado[2]),
-        mc2: resultado[3].trim(),
-        pontos2: Number(resultado[4]),
+      regex:
+        /^(.+?)\s*[-:]\s*(\d+)\s+vs\.?\s+(.+?)\s*[-:]\s*(\d+)$/i,
+      criar: (r) => ({
+        mc1: r[1].trim(),
+        pontos1: Number(r[2]),
+        mc2: r[3].trim(),
+        pontos2: Number(r[4]),
       }),
     },
     {
-      regex: /^(.+?)\s+(\d+)\s*[-–—xX:]\s*(\d+)\s+(.+)$/i,
-      criar: (resultado) => ({
-        mc1: resultado[1].trim(),
-        pontos1: Number(resultado[2]),
-        mc2: resultado[4].trim(),
-        pontos2: Number(resultado[3]),
+      regex:
+        /^(.+?)\s+(\d+)\s*[-–—xX:]\s*(\d+)\s+(.+)$/i,
+      criar: (r) => ({
+        mc1: r[1].trim(),
+        pontos1: Number(r[2]),
+        mc2: r[4].trim(),
+        pontos2: Number(r[3]),
       }),
     },
   ];
 
   for (const formato of formatos) {
     const resultado = limpa.match(formato.regex);
+
     if (!resultado) continue;
 
     const batalha = formato.criar(resultado);
@@ -172,7 +212,8 @@ function interpretarBatalha(linha: string): ResultadoLido | null {
     if (
       !batalha.mc1 ||
       !batalha.mc2 ||
-      normalizarTexto(batalha.mc1) === normalizarTexto(batalha.mc2)
+      normalizarTexto(batalha.mc1) ===
+        normalizarTexto(batalha.mc2)
     ) {
       return null;
     }
@@ -203,16 +244,22 @@ function criarClassificacao(
       const confronto = [...batalhas]
         .reverse()
         .find((batalha) => {
-          const participantes = [
-            ...batalha.equipa1,
-            ...batalha.equipa2,
-          ].map(normalizarNome);
+          const lado1 =
+            batalha.equipa1.map(normalizarNome);
 
-          return participantes.includes(a) && participantes.includes(b);
+          const lado2 =
+            batalha.equipa2.map(normalizarNome);
+
+          return (
+            (lado1.includes(a) && lado2.includes(b)) ||
+            (lado1.includes(b) && lado2.includes(a))
+          );
         });
 
       if (confronto) {
-        const vencedores = confronto.vencedores.map(normalizarNome);
+        const vencedores =
+          confronto.vencedores.map(normalizarNome);
+
         if (vencedores.includes(a)) return -1;
         if (vencedores.includes(b)) return 1;
       }
@@ -229,32 +276,56 @@ function criarClassificacao(
 export function processarNormal(
   contexto: ContextoProcessamento,
 ): ResultadoFormato {
-  const { linhas, normalizarNome, obterNomeOficial } = contexto;
+  const {
+    linhas,
+    normalizarNome,
+    obterNomeOficial,
+  } = contexto;
 
   const batalhas: BatalhaInterpretada[] = [];
   const linhasIgnoradas: string[] = [];
+
   const permanenciasIndicadas: string[] = [];
   const permanenciasValidas: string[] = [];
   const permanenciasIgnoradas: string[] = [];
 
-  const pontos: Record<string, number> = {};
-  const doisZero: Record<string, number> = {};
-  const nomes: Record<string, string> = {};
+  const pontos: Record<string, number> =
+    Object.create(null);
+
+  const doisZero: Record<string, number> =
+    Object.create(null);
+
+  const nomes: Record<string, string> =
+    Object.create(null);
 
   let faseAtual: FaseEdicao = "1ª FASE";
   let aLerPermanencias = false;
-  let aLerVencedor = false;
+  let linhaVencedorPendente: number | null = null;
   let vencedorEdicao: string | null = null;
 
-  function registarMC(nomeRecebido: string) {
-    const nomeOficial = obterNomeOficial(nomeRecebido.trim());
-    const chave = normalizarNome(nomeOficial);
+  function prepararMC(nomeRecebido: string) {
+    const nome = obterNomeOficial(
+      nomeRecebido.trim(),
+    );
 
-    nomes[chave] ??= nomeOficial;
-    pontos[chave] ??= 0;
-    doisZero[chave] ??= 0;
+    return {
+      chave: normalizarNome(nome),
+      nome,
+    };
+  }
 
-    return { chave, nome: nomes[chave] };
+  function registarMC(mc: {
+    chave: string;
+    nome: string;
+  }) {
+    nomes[mc.chave] ??= mc.nome;
+    pontos[mc.chave] ??= 0;
+    doisZero[mc.chave] ??= 0;
+
+    return {
+      chave: mc.chave,
+      nome: nomes[mc.chave],
+    };
   }
 
   function validarVencedor(
@@ -265,72 +336,119 @@ export function processarNormal(
       .reverse()
       .find((batalha) => batalha.fase === "FINAL");
 
-    const indicados = separarNomes(texto);
+    const indicados = separarNomes(texto).map(
+      (nome) =>
+        normalizarNome(obterNomeOficial(nome)),
+    );
+
+    const vencedores =
+      final?.vencedores.map(normalizarNome) ?? [];
 
     if (
       final &&
-      indicados.length === final.vencedores.length &&
+      indicados.length === vencedores.length &&
+      new Set(indicados).size === indicados.length &&
       indicados.every((nome) =>
-        final.vencedores.some(
-          (vencedor) =>
-            normalizarNome(vencedor) ===
-            normalizarNome(obterNomeOficial(nome)),
-        ),
+        vencedores.includes(nome),
       )
     ) {
       vencedorEdicao = final.vencedores.join(" e ");
-    } else {
+      return;
+    }
+
+    linhasIgnoradas.push(
+      `Linha ${numeroLinha}: ${texto} — vencedor não corresponde à final`,
+    );
+  }
+
+  function avisarVencedorSemNome() {
+    if (linhaVencedorPendente !== null) {
       linhasIgnoradas.push(
-        `Linha ${numeroLinha}: ${texto} — vencedor não corresponde à final`,
+        `Linha ${linhaVencedorPendente}: cabeçalho de vencedor sem nome`,
       );
+
+      linhaVencedorPendente = null;
     }
   }
 
-  for (let indice = 0; indice < linhas.length; indice += 1) {
+  for (
+    let indice = 0;
+    indice < linhas.length;
+    indice += 1
+  ) {
     let linha = linhas[indice].trim();
 
-    if (!linha) continue;
-    if (/^[★*━═=\s]+$/.test(linha)) continue;
-
-    if (/^vencedor(?:es)?\s*:\s*$/i.test(linha)) {
-      aLerVencedor = true;
+    if (
+      !linha ||
+      /^[★*━═=\s]+$/.test(linha)
+    ) {
       continue;
     }
 
-    if (aLerVencedor) {
-      validarVencedor(linha, indice + 1);
-      aLerVencedor = false;
+    const vencedorIndicado =
+      reconhecerVencedorEdicao(linha);
+
+    if (vencedorIndicado !== null) {
+      avisarVencedorSemNome();
+      aLerPermanencias = false;
+
+      if (vencedorIndicado) {
+        validarVencedor(
+          vencedorIndicado,
+          indice + 1,
+        );
+      } else {
+        linhaVencedorPendente = indice + 1;
+      }
+
       continue;
     }
 
-    const vencedorIndicado = reconhecerVencedorEdicao(linha);
+    const faseReconhecida =
+      reconhecerFase(linha);
 
-    if (vencedorIndicado) {
-      validarVencedor(vencedorIndicado, indice + 1);
+    const permanenciaReconhecida =
+      reconhecerPermanencia(linha);
+
+    if (linhaVencedorPendente !== null) {
+      if (
+        faseReconhecida ||
+        permanenciaReconhecida
+      ) {
+        avisarVencedorSemNome();
+      } else {
+        validarVencedor(linha, indice + 1);
+        linhaVencedorPendente = null;
+        continue;
+      }
+    }
+
+    if (faseReconhecida) {
+      faseAtual = faseReconhecida;
+      aLerPermanencias = false;
       continue;
     }
 
-    if (reconhecerPermanencia(linha)) {
+    if (permanenciaReconhecida) {
       aLerPermanencias = true;
       continue;
     }
 
     if (aLerPermanencias) {
-      permanenciasIndicadas.push(linha);
-      continue;
-    }
+      permanenciasIndicadas.push(
+        ...separarNomes(linha),
+      );
 
-    const faseReconhecida = reconhecerFase(linha);
-
-    if (faseReconhecida) {
-      faseAtual = faseReconhecida;
       continue;
     }
 
     if (/\bvs\.?\s*$/i.test(linha)) {
       let proxima = indice + 1;
 
-      while (proxima < linhas.length && !linhas[proxima].trim()) {
+      while (
+        proxima < linhas.length &&
+        !linhas[proxima].trim()
+      ) {
         proxima += 1;
       }
 
@@ -343,31 +461,69 @@ export function processarNormal(
     const resultado = interpretarBatalha(linha);
 
     if (!resultado) {
-      linhasIgnoradas.push(`Linha ${indice + 1}: ${linha}`);
+      linhasIgnoradas.push(
+        `Linha ${indice + 1}: ${linha}`,
+      );
+
       continue;
     }
 
-    const equipa1 = separarNomes(resultado.mc1)
-      .map(registarMC)
-      .filter((mc) => mc.chave);
+    // REPESCAGEM:
+    // Apenas um round: 1-0 ou 0-1.
+    // Outros resultados não são aceites.
+    if (
+      faseAtual === "REPESCAGEM" &&
+      !(
+        (
+          resultado.pontos1 === 1 &&
+          resultado.pontos2 === 0
+        ) ||
+        (
+          resultado.pontos1 === 0 &&
+          resultado.pontos2 === 1
+        )
+      )
+    ) {
+      linhasIgnoradas.push(
+        `Linha ${indice + 1}: ${linha} — REPESCAGEM aceita apenas 1–0 ou 0–1 (um round)`,
+      );
 
-    const equipa2 = separarNomes(resultado.mc2)
-      .map(registarMC)
-      .filter((mc) => mc.chave);
+      continue;
+    }
+
+    const lado1 = separarNomes(
+      resultado.mc1,
+    ).map(prepararMC);
+
+    const lado2 = separarNomes(
+      resultado.mc2,
+    ).map(prepararMC);
+
+    const participantes = [
+      ...lado1,
+      ...lado2,
+    ];
 
     if (
-      equipa1.length !== equipa2.length ||
-      equipa1.length === 0 ||
-      new Set([...equipa1, ...equipa2].map((mc) => mc.chave)).size !==
-        equipa1.length + equipa2.length
+      lado1.length === 0 ||
+      lado1.length !== lado2.length ||
+      participantes.some((mc) => !mc.chave) ||
+      new Set(
+        participantes.map((mc) => mc.chave),
+      ).size !== participantes.length
     ) {
       linhasIgnoradas.push(
         `Linha ${indice + 1}: ${linha} — equipas inválidas`,
       );
+
       continue;
     }
 
-    const empate = resultado.pontos1 === resultado.pontos2;
+    const equipa1 = lado1.map(registarMC);
+    const equipa2 = lado2.map(registarMC);
+
+    const empate =
+      resultado.pontos1 === resultado.pontos2;
 
     const vencedores = empate
       ? null
@@ -381,54 +537,104 @@ export function processarNormal(
         ? equipa2
         : equipa1;
 
+    // A pré-fase e a repescagem não
+    // atribuem bónus de vitória por 2-0.
     const bonusDoisZero =
+      faseAtual !== "PRÉ-FASE" &&
+      faseAtual !== "REPESCAGEM" &&
       !empate &&
-      Math.max(resultado.pontos1, resultado.pontos2) === 2 &&
-      Math.min(resultado.pontos1, resultado.pontos2) === 0;
+      Math.max(
+        resultado.pontos1,
+        resultado.pontos2,
+      ) === 2 &&
+      Math.min(
+        resultado.pontos1,
+        resultado.pontos2,
+      ) === 0;
 
     const pontuacoes: PontuacaoBatalha[] = [];
     const detalhes: string[] = [];
 
     if (vencedores) {
-      let pontosBatalha = pontosDaFase(faseAtual);
+      const pontosBatalha =
+        pontosDaFase(faseAtual) +
+        (bonusDoisZero ? 1 : 0);
+
+      if (faseAtual === "PRÉ-FASE") {
+        detalhes.push(
+          "Pré-fase — apuramento sem pontuação",
+        );
+      }
+
+      if (faseAtual === "REPESCAGEM") {
+        detalhes.push(
+          "Repescagem — 1 round; vitória: +2 pontos por MC",
+        );
+      }
 
       if (bonusDoisZero) {
-        pontosBatalha += 1;
         detalhes.push("bónus 2-0: +1");
       }
 
       for (const vencedor of vencedores) {
-        pontos[vencedor.chave] += pontosBatalha;
+        pontos[vencedor.chave] +=
+          pontosBatalha;
 
         if (bonusDoisZero) {
           doisZero[vencedor.chave] += 1;
         }
 
-        pontuacoes.push({
-          nome: vencedor.nome,
-          pontos: pontosBatalha,
-          motivo:
-            `${faseAtual} — vitória ${resultado.pontos1}-${resultado.pontos2}`,
-        });
+        // A pré-fase não cria
+        // movimentos de pontuação.
+        if (faseAtual !== "PRÉ-FASE") {
+          pontuacoes.push({
+            nome: vencedor.nome,
+            pontos: pontosBatalha,
+            motivo:
+              `${faseAtual} — vitória ` +
+              `${resultado.pontos1}-${resultado.pontos2}`,
+          });
+        }
       }
     }
 
     batalhas.push({
       fase: faseAtual,
-      equipa1: equipa1.map((mc) => mc.nome),
+
+      equipa1: equipa1.map(
+        (mc) => mc.nome,
+      ),
+
       pontosEquipa1: resultado.pontos1,
-      equipa2: equipa2.map((mc) => mc.nome),
+
+      equipa2: equipa2.map(
+        (mc) => mc.nome,
+      ),
+
       pontosEquipa2: resultado.pontos2,
-      vencedores: vencedores?.map((mc) => mc.nome) ?? [],
-      derrotados: derrotados?.map((mc) => mc.nome) ?? [],
-      resultado: `${resultado.pontos1}-${resultado.pontos2}`,
+
+      vencedores:
+        vencedores?.map((mc) => mc.nome) ?? [],
+
+      derrotados:
+        derrotados?.map((mc) => mc.nome) ?? [],
+
+      resultado:
+        `${resultado.pontos1}-${resultado.pontos2}`,
+
       bonusDoisZero,
       pontuacoes,
-      detalhes: empate ? ["empate — sem pontuação"] : detalhes,
+
+      detalhes: empate
+        ? ["empate — sem pontuação"]
+        : detalhes,
     });
   }
 
-  const elegiveisParaPermanencia = new Set<string>();
+  avisarVencedorSemNome();
+
+  const elegiveisParaPermanencia =
+    new Set<string>();
 
   for (const batalha of batalhas) {
     if (
@@ -439,20 +645,27 @@ export function processarNormal(
     }
 
     for (const derrotado of batalha.derrotados) {
-      elegiveisParaPermanencia.add(normalizarNome(derrotado));
+      elegiveisParaPermanencia.add(
+        normalizarNome(derrotado),
+      );
     }
   }
 
-  const permanenciasProcessadas = new Set<string>();
+  const permanenciasProcessadas =
+    new Set<string>();
 
   for (const nomeIndicado of permanenciasIndicadas) {
-    const nomeOficial = obterNomeOficial(nomeIndicado);
-    const chave = normalizarNome(nomeOficial);
+    const nomeOficial =
+      obterNomeOficial(nomeIndicado);
+
+    const chave =
+      normalizarNome(nomeOficial);
 
     if (permanenciasProcessadas.has(chave)) {
       permanenciasIgnoradas.push(
         `${nomeIndicado} — nome repetido`,
       );
+
       continue;
     }
 
@@ -462,6 +675,7 @@ export function processarNormal(
       permanenciasIgnoradas.push(
         `${nomeIndicado} — não participou nesta edição`,
       );
+
       continue;
     }
 
@@ -469,16 +683,22 @@ export function processarNormal(
       permanenciasIgnoradas.push(
         `${nomes[chave]} — não perdeu na pré-fase ou na 1.ª fase`,
       );
+
       continue;
     }
 
     pontos[chave] += 1;
-    permanenciasValidas.push(nomes[chave]);
+
+    permanenciasValidas.push(
+      nomes[chave],
+    );
   }
 
   return {
     formato: "normal",
+
     batalhas,
+
     classificacao: criarClassificacao(
       pontos,
       doisZero,
@@ -486,10 +706,12 @@ export function processarNormal(
       batalhas,
       normalizarNome,
     ),
+
     permanencias: {
       validas: permanenciasValidas,
       ignoradas: permanenciasIgnoradas,
     },
+
     linhasIgnoradas,
     vencedorEdicao,
   };
