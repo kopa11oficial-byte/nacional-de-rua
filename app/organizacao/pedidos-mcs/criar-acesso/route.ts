@@ -511,7 +511,7 @@ export async function POST(request: NextRequest) {
     let authUserId = mc.auth_user_id;
 
     // ==========================================
-    // 7. VERIFICAR CONTA ASSOCIADA
+    // 7. CONFIRMAR A CONTA ASSOCIADA
     // ==========================================
 
     if (authUserId) {
@@ -529,42 +529,147 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // ========================================
-      // 8. CRIAR CONTA NOVA
+      // 8. REUTILIZAR UMA CONTA VERIFICADA
+      //    OU CRIAR UMA CONTA NOVA
       // ========================================
 
-      const {
-        data: novaConta,
-        error: erroCriacao,
-      } = await admin.auth.admin.createUser({
-        email,
-        password: criarPasswordInterna(),
-        email_confirm: true,
-        app_metadata: {
-          tipo_acesso: "mc",
-          alterar_password_primeiro_acesso:
-            true,
-        },
-        user_metadata: {
-          nome_artistico: mc.nome_artistico,
-        },
-      });
+      const { data: paginaContas, error: erroListagem } =
+        await admin.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        });
 
-      if (erroCriacao || !novaConta.user) {
+      if (erroListagem) {
         console.error(
-          "Erro ao criar conta MC:",
-          erroCriacao,
+          "Erro ao verificar contas existentes:",
+          erroListagem,
         );
-
         return responder(
-          409,
-          "Não foi possível criar a conta do MC. Verifica se já existe uma conta com este email.",
+          503,
+          "Não foi possível verificar as contas existentes. O pedido continua pendente.",
         );
       }
 
-      authUserId = novaConta.user.id;
+      const contasCorrespondentes = (paginaContas.users ?? [])
+        .filter(
+          (conta) =>
+            normalizarEmail(conta.email ?? "") === email,
+        );
+
+      // Nunca escolher uma conta arbitrariamente.
+      if (contasCorrespondentes.length > 1) {
+        return responder(
+          409,
+          "Existem várias contas com este email. É necessária revisão pelo suporte.",
+        );
+      }
+
+      const contaExistente = contasCorrespondentes[0];
+
+      if (contaExistente) {
+        // Um registo de email, sozinho, não prova que o
+        // requerente controla a respetiva caixa de correio.
+        if (!contaExistente.email_confirmed_at) {
+          return responder(
+            409,
+            "O pedido está pendente porque este email já tem uma conta por confirmar. O MC tem de confirmar o endereço de email antes de o Suporte Geral concluir a aprovação. Não elimines a conta nem repitas a aprovação.",
+          );
+        }
+
+        const tipoExistente =
+          contaExistente.app_metadata?.tipo_acesso;
+
+        if (
+          tipoExistente !== undefined &&
+          tipoExistente !== "mc"
+        ) {
+          return responder(
+            409,
+            "O email pertence a uma conta com outro tipo de acesso. É necessária revisão pelo suporte.",
+          );
+        }
+
+        const { data: outrosMCs, error: erroAssociacoes } =
+          await admin
+            .from("mcs")
+            .select("id")
+            .eq("auth_user_id", contaExistente.id)
+            .neq("id", mc.id)
+            .limit(1);
+
+        if (erroAssociacoes) {
+          return responder(
+            503,
+            "Não foi possível verificar as associações desta conta.",
+          );
+        }
+
+        if ((outrosMCs ?? []).length > 0) {
+          return responder(
+            409,
+            "Esta conta já está associada a outro MC.",
+          );
+        }
+
+        const { error: erroMetadados } =
+          await admin.auth.admin.updateUserById(
+            contaExistente.id,
+            {
+              app_metadata: {
+                ...contaExistente.app_metadata,
+                tipo_acesso: "mc",
+                alterar_password_primeiro_acesso: true,
+              },
+            },
+          );
+
+        if (erroMetadados) {
+          console.error(
+            "Erro ao preparar conta existente do MC:",
+            erroMetadados,
+          );
+          return responder(
+            503,
+            "Não foi possível preparar a conta existente. O pedido continua pendente.",
+          );
+        }
+
+        authUserId = contaExistente.id;
+      } else {
+        // O Suporte Geral só cria contas novas após aprovar.
+        const {
+          data: novaConta,
+          error: erroCriacao,
+        } = await admin.auth.admin.createUser({
+          email,
+          password: criarPasswordInterna(),
+          email_confirm: true,
+          app_metadata: {
+            tipo_acesso: "mc",
+            alterar_password_primeiro_acesso: true,
+          },
+          user_metadata: {
+            nome_artistico: mc.nome_artistico,
+          },
+        });
+
+        if (erroCriacao || !novaConta.user) {
+          console.error(
+            "Erro ao criar conta MC:",
+            erroCriacao,
+          );
+
+          return responder(
+            409,
+            "Não foi possível criar a conta. Verifica se o email já tem uma conta Auth.",
+          );
+        }
+
+        authUserId = novaConta.user.id;
+      }
 
       // ========================================
-      // 9. ASSOCIAR CONTA AO PERFIL
+      // 9. ASSOCIAR A CONTA AO PERFIL
       // ========================================
 
       const {
@@ -588,7 +693,7 @@ export async function POST(request: NextRequest) {
 
         return responder(
           409,
-          "A conta foi criada, mas não foi possível associá-la ao perfil. É necessária revisão pelo suporte. Não repitas a aprovação.",
+          "A conta foi preparada, mas não foi possível associá-la ao perfil. É necessária revisão pelo suporte. Não repitas a aprovação.",
         );
       }
     }
