@@ -633,6 +633,51 @@ export function processarNormal(
 
   avisarVencedorSemNome();
 
+  // Numa chave de 8 existem quatro batalhas na 1.ª fase,
+  // duas na 2.ª fase e uma final, sem meia-final.
+  // A final vale +4 pela vitória (+1 em caso de 2–0).
+  // A base +5 continua reservada às chaves de 16
+  // com uma ronda de meias-finais.
+  // Aplicamos a correção após ler todas as batalhas para
+  // não depender da ordem dos cabeçalhos dos apontamentos.
+  const primeirasFases = batalhas.filter(
+    (batalha) => batalha.fase === "1ª FASE",
+  );
+  const segundasFases = batalhas.filter(
+    (batalha) => batalha.fase === "2ª FASE",
+  );
+  const meiasFinais = batalhas.filter(
+    (batalha) => batalha.fase === "SEMI-FINAL",
+  );
+  const finais = batalhas.filter(
+    (batalha) => batalha.fase === "FINAL",
+  );
+
+  const chaveDeOito =
+    primeirasFases.length === 4 &&
+    segundasFases.length === 2 &&
+    meiasFinais.length === 0 &&
+    finais.length === 1;
+
+  if (chaveDeOito) {
+    const final = finais[0];
+
+    for (const pontuacao of final.pontuacoes) {
+      // A final foi lida provisoriamente com +5 de base.
+      // Reduzimos 1 ponto a cada vencedor, mantendo
+      // intacto o bónus e a contagem de vitórias 2–0.
+      const chave = normalizarNome(pontuacao.nome);
+      pontos[chave] -= 1;
+      pontuacao.pontos -= 1;
+      pontuacao.motivo =
+        `FINAL (chave de 8) — vitória ${final.resultado}`;
+    }
+
+    final.detalhes.push(
+      "Chave de 8 — final: +4 pontos de vitória; bónus 2–0: +1 quando aplicável",
+    );
+  }
+
   const elegiveisParaPermanencia =
     new Set<string>();
 
