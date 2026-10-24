@@ -1802,7 +1802,7 @@ export default function RankingRodaPage() {
                     </p>
 
                     <h1
-                      className={`${boldIMIP.className} mt-3 break-words text-[clamp(2.6rem,5.5vw,4.8rem)] font-bold uppercase leading-[0.95] tracking-tight text-white`}
+                      className={`${boldIMIP.className} mt-3 break-normal hyphens-none text-[clamp(1.85rem,4.2vw,3.5rem)] font-bold uppercase leading-[1.02] tracking-tight text-white`}
                     >
                       {rodaVisual.nome}
                     </h1>
