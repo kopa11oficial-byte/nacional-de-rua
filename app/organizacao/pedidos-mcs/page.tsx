@@ -32,6 +32,25 @@ type ResultadoErro = {
   erro?: string;
 };
 
+type AtivacaoEmail = {
+  id: string;
+  mc_id: string;
+  nome_artistico: string;
+  email: string;
+  estado: string;
+  criado_em: string;
+  expira_em: string | null;
+  perfil_associado: boolean;
+};
+
+type RespostaAtivacoes = {
+  ativacoes?: AtivacaoEmail[];
+  pagina?: number;
+  porPagina?: number;
+  total?: number;
+  erro?: string;
+};
+
 function dataHora(valor: string) {
   return new Intl.DateTimeFormat("pt-PT", {
     dateStyle: "short",
@@ -49,6 +68,64 @@ export default function PedidosAcessoMCsPage() {
   const [mensagem, setMensagem] = useState("");
   const [aviso, setAviso] = useState("");
 
+  // Histórico separado das aprovações: não altera estados nem envia emails.
+  const [ativacoes, setAtivacoes] = useState<AtivacaoEmail[]>([]);
+  const [aCarregarAtivacoes, setACarregarAtivacoes] = useState(false);
+  const [erroAtivacoes, setErroAtivacoes] = useState("");
+  const [paginaAtivacoes, setPaginaAtivacoes] = useState(0);
+  const [totalAtivacoes, setTotalAtivacoes] = useState(0);
+  const [porPaginaAtivacoes, setPorPaginaAtivacoes] = useState(100);
+  const [filtroEstado, setFiltroEstado] = useState("todas");
+  const [filtroData, setFiltroData] = useState("");
+
+  const carregarAtivacoes = useCallback(async (pagina: number) => {
+    setACarregarAtivacoes(true);
+    setErroAtivacoes("");
+
+    try {
+      const { data: sessao, error: erroSessao } =
+        await supabase.auth.getSession();
+
+      const token = sessao.session?.access_token;
+      if (erroSessao || !token) {
+        throw new Error("A sessão expirou. Volta a iniciar sessão.");
+      }
+
+      const resposta = await fetch(
+        `/organizacao/pedidos-mcs/ativacoes?pagina=${pagina}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
+      );
+
+      const resultado = (await resposta.json().catch(() => null)) as
+        | RespostaAtivacoes
+        | null;
+
+      if (!resposta.ok || !Array.isArray(resultado?.ativacoes)) {
+        throw new Error(
+          resultado?.erro ?? "Não foi possível consultar as ativações.",
+        );
+      }
+
+      setAtivacoes(resultado.ativacoes);
+      setTotalAtivacoes(resultado.total ?? 0);
+      setPaginaAtivacoes(resultado.pagina ?? pagina);
+      setPorPaginaAtivacoes(resultado.porPagina ?? 100);
+    } catch (falha) {
+      setAtivacoes([]);
+      setErroAtivacoes(
+        falha instanceof Error
+          ? falha.message
+          : "Não foi possível carregar as ativações por email.",
+      );
+    } finally {
+      setACarregarAtivacoes(false);
+    }
+  }, []);
+
   const carregarPedidos = useCallback(async () => {
     setACarregar(true);
     setErro("");
@@ -62,11 +139,13 @@ export default function PedidosAcessoMCsPage() {
       if (erroAcesso || acesso !== true) {
         setAdministrador(false);
         setPedidos([]);
+        setAtivacoes([]);
         setErro("Esta área está disponível apenas para o suporte.");
         return;
       }
 
       setAdministrador(true);
+      void carregarAtivacoes(0);
 
       const { data, error: erroPedidos } = await supabase
         .from("pedidos_acesso_mcs")
@@ -121,7 +200,7 @@ export default function PedidosAcessoMCsPage() {
     } finally {
       setACarregar(false);
     }
-  }, []);
+  }, [carregarAtivacoes]);
 
   useEffect(() => {
     void carregarPedidos();
@@ -332,6 +411,26 @@ export default function PedidosAcessoMCsPage() {
 
   const tratados = pedidos.filter(
     (pedido) => pedido.estado !== "pendente",
+  );
+
+  const listaAtivacoes = ativacoes.filter((ativacao) => {
+    const correspondeEstado =
+      filtroEstado === "todas" || ativacao.estado === filtroEstado;
+    const correspondeData =
+      !filtroData ||
+      new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Europe/Lisbon",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(ativacao.criado_em)) === filtroData;
+
+    return correspondeEstado && correspondeData;
+  });
+
+  const totalPaginasAtivacoes = Math.max(
+    1,
+    Math.ceil(totalAtivacoes / porPaginaAtivacoes),
   );
 
   return (
@@ -576,6 +675,155 @@ export default function PedidosAcessoMCsPage() {
               </section>
             )}
           </>
+        )}
+
+        {administrador && (
+          <section
+            id="ativacoes-email"
+            aria-labelledby="titulo-ativacoes-email"
+            className="mt-12 rounded-xl border border-yellow-500/50 bg-black/90 p-5 sm:p-7"
+          >
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-500">
+              ATIVAÇÃO AUTOMÁTICA
+            </p>
+            <h2
+              id="titulo-ativacoes-email"
+              className="mt-2 text-2xl font-black text-white"
+            >
+              HISTÓRICO DE ATIVAÇÕES POR EMAIL
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+              Pedidos iniciados pelos MCs nos seus perfis públicos.
+              São diferentes dos pedidos sujeitos a aprovação acima.
+              Este histórico é apenas de consulta; não reenvia emails
+              nem aprova automaticamente o acesso.
+            </p>
+
+            {erroAtivacoes && (
+              <p role="alert" className="mt-5 border border-red-800 bg-red-950/30 p-4 text-sm text-red-200">
+                {erroAtivacoes}
+              </p>
+            )}
+
+            <div className="mt-5 flex flex-wrap items-end gap-4">
+              <label className="text-xs font-bold text-zinc-300">
+                ESTADO
+                <select
+                  value={filtroEstado}
+                  onChange={(evento) => setFiltroEstado(evento.target.value)}
+                  className="mt-2 block min-h-10 rounded-md border border-zinc-600 bg-zinc-950 px-3 text-sm text-white"
+                >
+                  <option value="todas">Todos</option>
+                  <option value="pendente">Pendente</option>
+                  <option value="ativado">Ativado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </label>
+              <label className="text-xs font-bold text-zinc-300">
+                DATA (PORTUGAL)
+                <input
+                  type="date"
+                  value={filtroData}
+                  onChange={(evento) => setFiltroData(evento.target.value)}
+                  className="mt-2 block min-h-10 rounded-md border border-zinc-600 bg-zinc-950 px-3 text-sm text-white"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltroEstado("todas");
+                  setFiltroData("");
+                }}
+                className="min-h-10 rounded-md border border-zinc-500 px-3 text-xs font-bold text-zinc-200 hover:border-yellow-500"
+              >
+                LIMPAR FILTROS
+              </button>
+            </div>
+
+            <p className="mt-4 text-xs text-zinc-400">
+              {totalAtivacoes} registo(s) no total. Os filtros aplicam-se
+              apenas aos {porPaginaAtivacoes} registos desta página.
+              Para consultar datas mais antigas, muda de página.
+            </p>
+
+            {aCarregarAtivacoes ? (
+              <p role="status" className="mt-5 text-sm text-yellow-300">
+                A carregar ativações...
+              </p>
+            ) : listaAtivacoes.length === 0 && !erroAtivacoes ? (
+              <p className="mt-5 text-sm text-zinc-300">
+                Não há ativações correspondentes aos filtros nesta página.
+              </p>
+            ) : (
+              <div className="mt-5 space-y-3">
+                {listaAtivacoes.map((ativacao) => {
+                  const expirada =
+                    ativacao.estado === "pendente" &&
+                    Boolean(ativacao.expira_em) &&
+                    new Date(ativacao.expira_em as string).getTime() < Date.now();
+
+                  return (
+                    <article
+                      key={ativacao.id}
+                      className="rounded-lg border border-zinc-700 bg-zinc-950/95 p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-black text-white">
+                            {ativacao.nome_artistico}
+                          </p>
+                          <p className="mt-1 break-all text-sm text-zinc-300">
+                            {ativacao.email}
+                          </p>
+                          <p className="mt-2 text-xs text-zinc-400">
+                            {dataHora(ativacao.criado_em)}
+                            {" · "}
+                            Perfil associado: {ativacao.perfil_associado ? "SIM" : "NÃO"}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-xs font-black uppercase tracking-wider ${
+                            ativacao.estado === "ativado"
+                              ? "text-emerald-300"
+                              : ativacao.estado === "cancelado"
+                                ? "text-red-300"
+                                : "text-yellow-300"
+                          }`}
+                        >
+                          {ativacao.estado}
+                          {expirada ? " · PRAZO EXPIRADO" : ""}
+                        </span>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-bold text-zinc-300">
+                PÁGINA {paginaAtivacoes + 1} DE {totalPaginasAtivacoes}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={aCarregarAtivacoes || paginaAtivacoes === 0}
+                  onClick={() => void carregarAtivacoes(paginaAtivacoes - 1)}
+                  className="rounded-md border border-yellow-600 px-4 py-2 text-xs font-black text-yellow-400 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ← ANTERIOR
+                </button>
+                <button
+                  type="button"
+                  disabled={aCarregarAtivacoes || paginaAtivacoes + 1 >= totalPaginasAtivacoes}
+                  onClick={() => void carregarAtivacoes(paginaAtivacoes + 1)}
+                  className="rounded-md border border-yellow-600 px-4 py-2 text-xs font-black text-yellow-400 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  SEGUINTE →
+                </button>
+              </div>
+            </div>
+          </section>
         )}
 
         <footer className="mt-14 border-t border-yellow-500/40 pt-6 text-center text-xs font-bold tracking-[0.25em] text-zinc-300">
