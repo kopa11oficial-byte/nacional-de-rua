@@ -683,6 +683,13 @@ export default function ApoiosPatrociniosPage() {
                   ↗
                 </span>
               </a>
+
+              <a
+                href="mailto:imip.nacional@gmail.com?subject=Proposta%20de%20parceria%20IMIP"
+                className="mt-4 block w-fit break-all text-sm font-bold text-[#101713] underline underline-offset-4 hover:text-[#087a43]"
+              >
+                imip.nacional@gmail.com
+              </a>
             </div>
 
             {/* LADO DIREITO — COMO COMEÇAR */}

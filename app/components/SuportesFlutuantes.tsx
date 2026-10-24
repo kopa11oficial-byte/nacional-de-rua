@@ -414,6 +414,15 @@ export default function SuportesFlutuantes() {
                           </p>
                         )}
 
+                        {area.id === "geral" && (
+                          <a
+                            href="mailto:imip.nacional@gmail.com?subject=Suporte%20IMIP"
+                            className="mt-3 block break-all text-xs font-bold text-[#e4c46d] underline-offset-4 hover:underline"
+                          >
+                            EMAIL OFICIAL · imip.nacional@gmail.com
+                          </a>
+                        )}
+
                         {whatsapp ? (
                           <a
                             href={whatsapp}

@@ -505,7 +505,7 @@ export function PedirAcessoMC({ mcId }: Props) {
       ) {
         throw new Error(
           resultado?.erro ??
-            "Não foi possível enviar a ligação de acesso. Tenta novamente.",
+            "Não foi possível registar o pedido. Tenta novamente.",
         );
       }
 
@@ -513,13 +513,13 @@ export function PedirAcessoMC({ mcId }: Props) {
 
       setMensagem(
         resultado.mensagem ??
-          "Se o pedido puder ser processado, receberás um email com a ligação de acesso. Verifica também a pasta de spam.",
+          "O teu pedido será analisado pelo Suporte Geral do IMIP. O acesso ao perfil exige aprovação.",
       );
     } catch (falha) {
       setMensagem(
         falha instanceof Error
           ? falha.message
-          : "Ocorreu um erro ao enviar o email. Tenta novamente.",
+          : "Ocorreu um erro ao registar o pedido. Tenta novamente.",
       );
     } finally {
       setAEnviar(false);
@@ -921,9 +921,9 @@ export function PedirAcessoMC({ mcId }: Props) {
             </div>
 
             <p className="mt-4 text-sm leading-relaxed text-zinc-300">
-              Indica o teu email. Receberás uma ligação
-              para confirmar o endereço e aceder ao perfil,
-              sem aprovação manual.
+              Indica o teu email para solicitar acesso a este
+              perfil. O pedido será analisado pelo Suporte Geral
+              do IMIP antes de qualquer acesso ser atribuído.
             </p>
 
             <form
@@ -973,10 +973,10 @@ export function PedirAcessoMC({ mcId }: Props) {
                 className="mt-5 min-h-12 w-full rounded-lg bg-[#e8c76c] px-4 py-3 text-sm font-black text-black disabled:cursor-wait disabled:opacity-60"
               >
                 {aEnviar
-                  ? "A ENVIAR..."
+                  ? "A REGISTAR..."
                   : pedidoEnviado
-                    ? "REENVIAR LIGAÇÃO"
-                    : "RECEBER LIGAÇÃO DE ACESSO"}
+                    ? "PEDIDO REGISTADO"
+                    : "PEDIR ACESSO AO PERFIL"}
               </button>
             </form>
           </section>
