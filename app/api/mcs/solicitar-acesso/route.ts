@@ -489,8 +489,14 @@ export async function POST(
         );
       }
 
+      if (erroEnvio.status === 429) {
+        return responder(429, {
+          erro: "O serviço de envio de emails atingiu o limite temporário. A tentativa ficou registada no histórico de acesso. Podes contactar o Suporte Geral através de imip.nacional@gmail.com ou tentar novamente mais tarde.",
+        });
+      }
+
       return responder(502, {
-        erro: "Não foi possível solicitar o email de acesso. Aguarda um momento e tenta novamente.",
+        erro: "Não foi possível enviar o email de acesso. Podes contactar o Suporte Geral através de imip.nacional@gmail.com para obter ajuda.",
       });
     }
 
