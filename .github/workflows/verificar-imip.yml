@@ -31,5 +31,7 @@ jobs:
         run: npm ci
       - name: Verificar tipos TypeScript
         run: npx tsc --noEmit
+      - name: Testar pontuação de chaves de 8 e 16
+        run: node scripts/testar-chaves-normal.cjs
       - name: Compilar Next.js
         run: npm run build
