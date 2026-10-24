@@ -55,6 +55,7 @@ function dataHora(valor: string) {
   return new Intl.DateTimeFormat("pt-PT", {
     dateStyle: "short",
     timeStyle: "short",
+    timeZone: "Europe/Lisbon",
   }).format(new Date(valor));
 }
 
@@ -104,7 +105,7 @@ export default function PedidosAcessoMCsPage() {
         | RespostaAtivacoes
         | null;
 
-      if (!resposta.ok || !Array.isArray(resultado?.ativacoes)) {
+      if (!resposta.ok || !resultado || !Array.isArray(resultado.ativacoes)) {
         throw new Error(
           resultado?.erro ?? "Não foi possível consultar as ativações.",
         );
