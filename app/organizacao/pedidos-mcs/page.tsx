@@ -207,6 +207,18 @@ export default function PedidosAcessoMCsPage() {
     void carregarPedidos();
   }, [carregarPedidos]);
 
+  useEffect(() => {
+    if (
+      administrador &&
+      !aCarregarAtivacoes &&
+      window.location.hash === "#ativacoes-email"
+    ) {
+      document.getElementById("ativacoes-email")?.scrollIntoView({
+        block: "start",
+      });
+    }
+  }, [administrador, aCarregarAtivacoes]);
+
   async function obterToken(): Promise<string> {
     const { data, error } = await supabase.auth.getSession();
 
