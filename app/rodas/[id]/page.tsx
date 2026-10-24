@@ -2346,9 +2346,16 @@ export default function RankingRodaPage() {
                     </h3>
                   </div>
 
-                  <p className="text-xs font-bold text-zinc-400">
-                    PONTOS · 2–0 · PARTICIPAÇÕES
-                  </p>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-zinc-400">
+                      PONTOS · 2–0 · PARTICIPAÇÕES
+                    </p>
+                    {ranking.length > 8 && (
+                      <p className="mt-2 text-xs font-bold text-[#d6b56d]">
+                        TOP 8 À VISTA · DESLIZA NO RANKING PARA VER OS RESTANTES ↓
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-5 overflow-x-auto border border-white/20 bg-[#07100c]">
@@ -2370,7 +2377,14 @@ export default function RankingRodaPage() {
                       </span>
                     </div>
 
-                    {ranking.map((mc, index) => {
+                    <div
+                      role="region"
+                      aria-label="Lista de MCs classificados, com deslocação vertical até ao último lugar"
+                      tabIndex={0}
+                      className="max-h-[32rem] overflow-y-auto overscroll-contain sm:max-h-[36rem]"
+                      style={{ scrollbarColor: "#d6b56d #07100c" }}
+                    >
+                      {ranking.map((mc, index) => {
                       const destaque =
                         index === 0
                           ? "#e7c56f"
@@ -2378,12 +2392,12 @@ export default function RankingRodaPage() {
                             ? "#c6cbd0"
                             : index === 2
                               ? "#cb8b63"
-                              : "#d6b56d";
+                              : "#e9e6df";
 
                       return (
                         <div
                           key={mc.id}
-                          className={`grid grid-cols-[48px_minmax(150px,1fr)_70px_52px_55px] items-center gap-2 border-t border-white/10 px-3 py-4 text-xs transition hover:bg-white/5 sm:grid-cols-[75px_minmax(170px,1fr)_100px_75px_90px] sm:px-6 sm:py-5 sm:text-sm ${
+                          className={`grid min-h-16 grid-cols-[48px_minmax(150px,1fr)_70px_52px_55px] items-center gap-2 border-t border-white/10 px-3 py-2 text-xs transition hover:bg-white/5 sm:min-h-[4.5rem] sm:grid-cols-[75px_minmax(170px,1fr)_100px_75px_90px] sm:px-6 sm:py-2 sm:text-sm ${
                             index < 3
                               ? "bg-[#132016]/60"
                               : ""
@@ -2423,14 +2437,15 @@ export default function RankingRodaPage() {
                       );
                     })}
 
-                    {ranking.length === 0 && (
-                      <p className="border-t border-white/10 px-5 py-9 text-sm text-zinc-300">
-                        Ainda não existem
-                        pontuações registadas
-                        nesta roda para a época
-                        selecionada.
-                      </p>
-                    )}
+                      {ranking.length === 0 && (
+                        <p className="border-t border-white/10 px-5 py-9 text-sm text-zinc-300">
+                          Ainda não existem
+                          pontuações registadas
+                          nesta roda para a época
+                          selecionada.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
