@@ -82,10 +82,17 @@ const cartoesGerais = [
   {
     titulo: "PEDIDOS DE ACESSO DE MCs",
     descricao:
-      "Consulta, aprova ou recusa pedidos de acesso aos perfis de MC.",
+      "Consulta, aprova ou recusa pedidos que exigem validação do Suporte Geral.",
     destino: "/organizacao/pedidos-mcs",
     categoria: "PEDIDOS",
     contador: "mcs" as const,
+  },
+  {
+    titulo: "ATIVAÇÕES DE MCs POR EMAIL",
+    descricao:
+      "Consulta ativações automáticas, cancelamentos, prazos expirados e perfis associados. Sem aprovar nem reenviar emails.",
+    destino: "/organizacao/pedidos-mcs#ativacoes-email",
+    categoria: "HISTÓRICO",
   },
   {
     titulo: "PEDIDOS DE ACESSO DE RODAS",
