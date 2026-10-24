@@ -26,6 +26,15 @@ type AtivacaoAcesso = {
 
 const POR_PAGINA = 100;
 
+function obterAmbiente(): CloudflareBindings {
+  try {
+    return getCloudflareContext().env as unknown as CloudflareBindings;
+  } catch {
+    // Permite também desenvolvimento local com variáveis process.env.
+    return {};
+  }
+}
+
 function responder(
   dados: Record<string, unknown>,
   status: number,
@@ -49,7 +58,7 @@ export async function GET(request: NextRequest) {
       return responder({ erro: "Sessão em falta." }, 401);
     }
 
-    const ambiente = getCloudflareContext().env as unknown as CloudflareBindings;
+    const ambiente = obterAmbiente();
     const url = ambiente.SUPABASE_URL ?? process.env.SUPABASE_URL;
     const chave = ambiente.SUPABASE_SERVICE_ROLE_KEY ??
       process.env.SUPABASE_SERVICE_ROLE_KEY;
