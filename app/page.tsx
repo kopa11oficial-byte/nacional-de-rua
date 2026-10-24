@@ -1194,6 +1194,13 @@ export default function Home() {
             <p className="mt-2 text-xs font-bold tracking-wide text-[#d5d1c7]">
               IMIP · Improviso Made in Portugal
             </p>
+
+            <a
+              href="mailto:imip.nacional@gmail.com"
+              className="mt-3 inline-block text-xs font-bold text-[#e1bd6d] hover:underline"
+            >
+              CONTACTO OFICIAL · imip.nacional@gmail.com
+            </a>
           </div>
 
           <div className="flex flex-wrap gap-x-5 gap-y-3 text-xs font-black uppercase text-[#e1bd6d]">
