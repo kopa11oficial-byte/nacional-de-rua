@@ -69,6 +69,13 @@ export default function PedidosAcessoMCsPage() {
   const [mensagem, setMensagem] = useState("");
   const [aviso, setAviso] = useState("");
 
+  // Ligação sensível: mantida só em memória e apenas no painel do suporte.
+  const [ligacaoManual, setLigacaoManual] = useState<{
+    pedidoId: string;
+    url: string;
+    email: string;
+  } | null>(null);
+
   // Histórico separado das aprovações: não altera estados nem envia emails.
   const [ativacoes, setAtivacoes] = useState<AtivacaoEmail[]>([]);
   const [aCarregarAtivacoes, setACarregarAtivacoes] = useState(false);
@@ -418,6 +425,82 @@ export default function PedidosAcessoMCsPage() {
     }
   }
 
+  async function gerarLigacaoManual(pedido: PedidoAcesso) {
+    if (aAtualizar || pedido.estado !== "aprovado") return;
+
+    const nome = nomesMCs[pedido.mc_id] ?? "este MC";
+    const confirmado = window.confirm(
+      `Gerar uma ligação temporária para ${nome}? Envia-a exclusivamente para ${pedido.email}, por uma mensagem privada da conta oficial IMIP. Quem possuir esta ligação pode alterar a palavra-passe.`,
+    );
+    if (!confirmado) return;
+
+    setAAtualizar(pedido.id);
+    setLigacaoManual(null);
+    setErro("");
+    setMensagem("");
+    setAviso("");
+
+    try {
+      const token = await obterToken();
+      const resposta = await fetch(
+        "/organizacao/pedidos-mcs/gerar-ligacao",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pedidoId: pedido.id }),
+          cache: "no-store",
+        },
+      );
+
+      const resultado = (await resposta.json().catch(() => null)) as
+        | { sucesso?: boolean; ligacao?: string; erro?: string }
+        | null;
+
+      if (
+        !resposta.ok ||
+        resultado?.sucesso !== true ||
+        !resultado.ligacao
+      ) {
+        throw new Error(resultado?.erro ?? "Não foi possível gerar a ligação.");
+      }
+
+      setLigacaoManual({
+        pedidoId: pedido.id,
+        url: resultado.ligacao,
+        email: pedido.email,
+      });
+      setMensagem(
+        `Ligação temporária criada para ${nome}. Copia-a e envia-a somente para o email validado. Não publiques nem partilhes com terceiros.`,
+      );
+    } catch (falha) {
+      setErro(
+        falha instanceof Error
+          ? falha.message
+          : "Ocorreu um erro ao gerar a ligação de recuperação.",
+      );
+    } finally {
+      setAAtualizar(null);
+    }
+  }
+
+  async function copiarLigacaoManual() {
+    if (!ligacaoManual) return;
+
+    try {
+      await navigator.clipboard.writeText(ligacaoManual.url);
+      setMensagem(
+        `Ligação copiada. Envia-a em privado para ${ligacaoManual.email}, a partir do email oficial do IMIP. Não abras tu próprio a ligação.`,
+      );
+    } catch {
+      setErro(
+        "A cópia automática falhou. Verifica as permissões da área de transferência do navegador.",
+      );
+    }
+  }
+
   const pendentes = pedidos.filter(
     (pedido) => pedido.estado === "pendente",
   );
@@ -668,18 +751,51 @@ export default function PedidosAcessoMCsPage() {
                         </p>
 
                         {pedido.estado === "aprovado" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void reenviarEmailAcesso(pedido)
-                            }
-                            disabled={Boolean(aAtualizar)}
-                            className="rounded-lg border border-yellow-500 px-4 py-2 text-xs font-black text-yellow-400 hover:bg-yellow-500 hover:text-black disabled:opacity-50"
-                          >
-                            {aAtualizar === pedido.id
-                              ? "A ENVIAR EMAIL..."
-                              : "REENVIAR EMAIL DE ACESSO"}
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void reenviarEmailAcesso(pedido)
+                              }
+                              disabled={Boolean(aAtualizar)}
+                              className="rounded-lg border border-yellow-500 px-4 py-2 text-xs font-black text-yellow-400 hover:bg-yellow-500 hover:text-black disabled:opacity-50"
+                            >
+                              {aAtualizar === pedido.id
+                                ? "A ENVIAR EMAIL..."
+                                : "REENVIAR EMAIL DE ACESSO"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void gerarLigacaoManual(pedido)}
+                              disabled={Boolean(aAtualizar)}
+                              className="rounded-lg border border-emerald-600 px-4 py-2 text-xs font-black text-emerald-300 hover:bg-emerald-800 hover:text-white disabled:opacity-50"
+                            >
+                              {aAtualizar === pedido.id
+                                ? "A GERAR..."
+                                : "GERAR LIGAÇÃO SEM SMTP"}
+                            </button>
+                            {ligacaoManual?.pedidoId === pedido.id && (
+                              <div className="max-w-sm border-l-4 border-emerald-600 bg-emerald-950/40 p-3 text-xs text-emerald-100">
+                                <p className="mb-2">
+                                  Ligação temporária gerada. Envia apenas ao email confirmado do MC, através do IMIP. Não a abras nem a partilhes publicamente.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => void copiarLigacaoManual()}
+                                  className="rounded bg-emerald-600 px-3 py-2 font-black text-white hover:bg-emerald-500"
+                                >
+                                  COPIAR LIGAÇÃO PRIVADA
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setLigacaoManual(null)}
+                                  className="ml-2 border border-white/30 px-3 py-2 font-black"
+                                >
+                                  OCULTAR
+                                </button>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
