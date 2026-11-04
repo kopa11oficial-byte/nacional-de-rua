@@ -506,15 +506,15 @@ export default function ApontamentosPage() {
               lado: ["A", "B", "C"][indice],
             }))
           : [
-          ...batalha.equipa1.map((nome) => ({
-            nome,
-            lado: "A",
-          })),
-          ...batalha.equipa2.map((nome) => ({
-            nome,
-            lado: "B",
-          })),
-        ];
+              ...batalha.equipa1.map((nome) => ({
+                nome,
+                lado: "A",
+              })),
+              ...batalha.equipa2.map((nome) => ({
+                nome,
+                lado: "B",
+              })),
+            ];
 
         const participacoesResolvidas = participacoes.map(({ nome, lado }) => {
           const mc = mcsPorNomeAtualizado.get(
