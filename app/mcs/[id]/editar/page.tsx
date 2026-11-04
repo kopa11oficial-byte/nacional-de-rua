@@ -711,6 +711,7 @@ export default function EditarPerfilMCPage() {
     }
 
     setAGuardarPersonalizacao(true);
+    let caminhoNovaCapa: string | null = null;
 
     try {
       const {
@@ -744,7 +745,50 @@ export default function EditarPerfilMCPage() {
         );
       }
 
+      // Reutilizar o bucket público de fotografias dos MCs,
+      // já protegido por pasta individual do utilizador autenticado.
+      let capaUrlFinal: string | null = capaRemovida
+        ? null
+        : personalizacao.capa_url.trim() || null;
+
+      if (ficheiroCapa) {
+        const extensoes: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp",
+        };
+        const extensao = extensoes[ficheiroCapa.type];
+
+        if (!extensao || ficheiroCapa.size > 5 * 1024 * 1024) {
+          throw new Error("A capa deve ser JPG, PNG ou WebP, até 5 MB.");
+        }
+
+        caminhoNovaCapa = `${autenticacao.user.id}/capa-${Date.now()}-${crypto.randomUUID()}.${extensao}`;
+
+        const { error: erroUpload } = await supabase.storage
+          .from("fotos-mcs")
+          .upload(caminhoNovaCapa, ficheiroCapa, {
+            cacheControl: "3600",
+            contentType: ficheiroCapa.type,
+            upsert: false,
+          });
+
+        if (erroUpload) {
+          throw new Error(`Não foi possível carregar a capa: ${erroUpload.message}`);
+        }
+
+        const { data: capaPublica } = supabase.storage
+          .from("fotos-mcs")
+          .getPublicUrl(caminhoNovaCapa);
+
+        if (!capaPublica.publicUrl) {
+          throw new Error("Não foi possível obter o endereço da capa.");
+        }
+        capaUrlFinal = capaPublica.publicUrl;
+      }
+
       const valores = {
+        capa_url: capaUrlFinal,
         lema:
           personalizacao.lema.trim() || null,
         cor_destaque:
@@ -782,11 +826,24 @@ export default function EditarPerfilMCPage() {
       }
 
       setPersonalizacaoExiste(true);
+      setPersonalizacao((anterior) => ({
+        ...anterior,
+        capa_url: capaUrlFinal ?? "",
+      }));
+      setFicheiroCapa(null);
+      setCapaRemovida(false);
+      setErroCapaPreview(false);
+      if (inputCapaRef.current) inputCapaRef.current.value = "";
 
       setMensagemPersonalizacao(
-        "Personalização guardada! Já podes consultar as cores e o lema no perfil público.",
+        "Personalização guardada! A capa, o lema e as cores já aparecem no perfil público.",
       );
     } catch (falha) {
+      // Se a gravação falhar, eliminar apenas o ficheiro que
+      // acabámos de carregar, nunca a capa anteriormente publicada.
+      if (caminhoNovaCapa) {
+        await supabase.storage.from("fotos-mcs").remove([caminhoNovaCapa]);
+      }
       setErroPersonalizacao(
         falha instanceof Error
           ? falha.message
