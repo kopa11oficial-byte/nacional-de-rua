@@ -43,6 +43,7 @@ type CamposPerfil = {
 
 type PersonalizacaoEditavel = {
   lema: string;
+  capa_url: string;
   cor_destaque: string;
   cor_fundo: string;
   cor_lema: string;
@@ -50,6 +51,7 @@ type PersonalizacaoEditavel = {
 
 const personalizacaoInicial: PersonalizacaoEditavel = {
   lema: "",
+  capa_url: "",
   cor_destaque: "#d6b56d",
   cor_fundo: "#091b13",
   cor_lema: "#ffffff",
@@ -97,6 +99,13 @@ export default function EditarPerfilMCPage() {
     useState(false);
 
   const inputFotoRef = useRef<HTMLInputElement>(null);
+
+  // Fotografia horizontal de capa (independente da foto principal).
+  const [ficheiroCapa, setFicheiroCapa] = useState<File | null>(null);
+  const [capaLocal, setCapaLocal] = useState("");
+  const [capaRemovida, setCapaRemovida] = useState(false);
+  const [erroCapaPreview, setErroCapaPreview] = useState(false);
+  const inputCapaRef = useRef<HTMLInputElement>(null);
 
   const [userId, setUserId] = useState("");
   const [aCarregar, setACarregar] = useState(true);
@@ -198,9 +207,13 @@ export default function EditarPerfilMCPage() {
       x_url: perfil.x_url ?? "",
     });
 
-    // Personalização visual existente.
-    // Não alterar capa, fundo fotográfico
-    // nem ordem das secções.
+    // Personalização visual existente. A capa pode ser editada;
+    // não alterar o fundo fotográfico nem a ordem das secções.
+
+    setFicheiroCapa(null);
+    setCapaRemovida(false);
+    setErroCapaPreview(false);
+    if (inputCapaRef.current) inputCapaRef.current.value = "";
 
     setACarregarPersonalizacao(true);
     setPersonalizacaoDisponivel(false);
@@ -213,7 +226,7 @@ export default function EditarPerfilMCPage() {
     } = await supabase
       .from("mc_personalizacao")
       .select(
-        "mc_id,lema,cor_destaque,cor_fundo,cor_lema",
+        "mc_id,lema,capa_url,cor_destaque,cor_fundo,cor_lema",
       )
       .eq("mc_id", id)
       .maybeSingle();
@@ -228,6 +241,7 @@ export default function EditarPerfilMCPage() {
 
       setPersonalizacao({
         lema: aparencia?.lema ?? "",
+        capa_url: aparencia?.capa_url ?? "",
         cor_destaque:
           aparencia?.cor_destaque ?? "#d6b56d",
         cor_fundo:
@@ -304,6 +318,17 @@ export default function EditarPerfilMCPage() {
     };
   }, [ficheiroFoto]);
 
+  useEffect(() => {
+    if (!ficheiroCapa) {
+      setCapaLocal("");
+      return;
+    }
+
+    const urlLocal = URL.createObjectURL(ficheiroCapa);
+    setCapaLocal(urlLocal);
+    return () => URL.revokeObjectURL(urlLocal);
+  }, [ficheiroCapa]);
+
   function atualizarCampo(
     campo: keyof CamposPerfil,
     valor: string,
@@ -373,6 +398,42 @@ export default function EditarPerfilMCPage() {
     if (inputFotoRef.current) {
       inputFotoRef.current.value = "";
     }
+  }
+
+  // ==========================================
+  // ESCOLHER OU REMOVER FOTOGRAFIA DE CAPA
+  // ==========================================
+
+  function selecionarCapa(evento: ChangeEvent<HTMLInputElement>) {
+    const ficheiro = evento.currentTarget.files?.[0];
+    if (!ficheiro) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(ficheiro.type)) {
+      setErroPersonalizacao("Escolhe uma imagem de capa JPG, PNG ou WebP.");
+      evento.currentTarget.value = "";
+      return;
+    }
+
+    if (ficheiro.size > 5 * 1024 * 1024) {
+      setErroPersonalizacao("A imagem de capa não pode ultrapassar 5 MB.");
+      evento.currentTarget.value = "";
+      return;
+    }
+
+    setErroPersonalizacao("");
+    setMensagemPersonalizacao("");
+    setErroCapaPreview(false);
+    setCapaRemovida(false);
+    setFicheiroCapa(ficheiro);
+  }
+
+  function removerCapa() {
+    setFicheiroCapa(null);
+    setCapaRemovida(true);
+    setErroCapaPreview(false);
+    setErroPersonalizacao("");
+    setMensagemPersonalizacao("");
+    if (inputCapaRef.current) inputCapaRef.current.value = "";
   }
 
   // ==========================================
@@ -650,6 +711,7 @@ export default function EditarPerfilMCPage() {
     }
 
     setAGuardarPersonalizacao(true);
+    let caminhoNovaCapa: string | null = null;
 
     try {
       const {
@@ -683,7 +745,50 @@ export default function EditarPerfilMCPage() {
         );
       }
 
+      // Reutilizar o bucket público de fotografias dos MCs,
+      // já protegido por pasta individual do utilizador autenticado.
+      let capaUrlFinal: string | null = capaRemovida
+        ? null
+        : personalizacao.capa_url.trim() || null;
+
+      if (ficheiroCapa) {
+        const extensoes: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp",
+        };
+        const extensao = extensoes[ficheiroCapa.type];
+
+        if (!extensao || ficheiroCapa.size > 5 * 1024 * 1024) {
+          throw new Error("A capa deve ser JPG, PNG ou WebP, até 5 MB.");
+        }
+
+        caminhoNovaCapa = `${autenticacao.user.id}/capa-${Date.now()}-${crypto.randomUUID()}.${extensao}`;
+
+        const { error: erroUpload } = await supabase.storage
+          .from("fotos-mcs")
+          .upload(caminhoNovaCapa, ficheiroCapa, {
+            cacheControl: "3600",
+            contentType: ficheiroCapa.type,
+            upsert: false,
+          });
+
+        if (erroUpload) {
+          throw new Error(`Não foi possível carregar a capa: ${erroUpload.message}`);
+        }
+
+        const { data: capaPublica } = supabase.storage
+          .from("fotos-mcs")
+          .getPublicUrl(caminhoNovaCapa);
+
+        if (!capaPublica.publicUrl) {
+          throw new Error("Não foi possível obter o endereço da capa.");
+        }
+        capaUrlFinal = capaPublica.publicUrl;
+      }
+
       const valores = {
+        capa_url: capaUrlFinal,
         lema:
           personalizacao.lema.trim() || null,
         cor_destaque:
@@ -721,11 +826,24 @@ export default function EditarPerfilMCPage() {
       }
 
       setPersonalizacaoExiste(true);
+      setPersonalizacao((anterior) => ({
+        ...anterior,
+        capa_url: capaUrlFinal ?? "",
+      }));
+      setFicheiroCapa(null);
+      setCapaRemovida(false);
+      setErroCapaPreview(false);
+      if (inputCapaRef.current) inputCapaRef.current.value = "";
 
       setMensagemPersonalizacao(
-        "Personalização guardada! Já podes consultar as cores e o lema no perfil público.",
+        "Personalização guardada! A capa, o lema e as cores já aparecem no perfil público.",
       );
     } catch (falha) {
+      // Se a gravação falhar, eliminar apenas o ficheiro que
+      // acabámos de carregar, nunca a capa anteriormente publicada.
+      if (caminhoNovaCapa) {
+        await supabase.storage.from("fotos-mcs").remove([caminhoNovaCapa]);
+      }
       setErroPersonalizacao(
         falha instanceof Error
           ? falha.message
@@ -786,10 +904,12 @@ export default function EditarPerfilMCPage() {
     setFicheiroFoto(null);
     setFotoRemovida(false);
     setErroFotoPreview(false);
+    setFicheiroCapa(null);
+    setCapaRemovida(false);
+    setErroCapaPreview(false);
 
-    if (inputFotoRef.current) {
-      inputFotoRef.current.value = "";
-    }
+    if (inputFotoRef.current) inputFotoRef.current.value = "";
+    if (inputCapaRef.current) inputCapaRef.current.value = "";
 
     setPersonalizacao(
       personalizacaoInicial,
@@ -1211,6 +1331,67 @@ export default function EditarPerfilMCPage() {
                     nem as estatísticas oficiais.
                   </p>
 
+                  {/* CAPA DO PERFIL */}
+
+                  <div className="border border-[#d6b56d]/40 bg-black/40 p-4 sm:p-5">
+                    <p className="text-sm font-black uppercase text-[#f0e6d1]">
+                      Fotografia de capa
+                    </p>
+                    <p className="mt-2 text-xs leading-relaxed text-[#d2d9d0]">
+                      Esta fotografia aparece no topo do teu perfil público.
+                      Escolhe uma imagem horizontal, de preferência 1600 × 600 píxeis.
+                      JPG, PNG ou WebP até 5 MB.
+                    </p>
+                    <div className="relative mt-4 flex aspect-[16/6] min-h-32 items-center justify-center overflow-hidden border border-[#d6b56d]/35 bg-[#152119]">
+                      {(capaLocal || (!capaRemovida ? personalizacao.capa_url.trim() : "")) && !erroCapaPreview ? (
+                        <img
+                          src={capaLocal || personalizacao.capa_url.trim()}
+                          alt="Pré-visualização da capa do teu perfil"
+                          className="h-full w-full object-cover"
+                          onError={() => setErroCapaPreview(true)}
+                        />
+                      ) : (
+                        <span className="px-4 text-center text-xs font-bold uppercase text-[#d2d9d0]">
+                          {erroCapaPreview ? "IMAGEM INDISPONÍVEL" : "SEM FOTOGRAFIA DE CAPA"}
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      ref={inputCapaRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      aria-label="Escolher fotografia de capa"
+                      className="sr-only"
+                      disabled={aCarregarPersonalizacao || aGuardarPersonalizacao}
+                      onChange={selecionarCapa}
+                    />
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => inputCapaRef.current?.click()}
+                        disabled={aCarregarPersonalizacao || aGuardarPersonalizacao}
+                        className="min-h-11 border border-[#d6b56d] bg-[#d6b56d] px-4 py-3 text-xs font-black uppercase text-[#101713] disabled:opacity-50"
+                      >
+                        {ficheiroCapa || (!capaRemovida && personalizacao.capa_url)
+                          ? "ALTERAR FOTO DE CAPA"
+                          : "ESCOLHER FOTO DE CAPA"}
+                      </button>
+                      {(ficheiroCapa || (!capaRemovida && personalizacao.capa_url)) && (
+                        <button
+                          type="button"
+                          onClick={removerCapa}
+                          disabled={aCarregarPersonalizacao || aGuardarPersonalizacao}
+                          className="min-h-11 border border-[#b82535] px-4 py-3 text-xs font-black uppercase text-[#f0e6d1] disabled:opacity-50"
+                        >
+                          REMOVER CAPA
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-3 text-xs text-[#d2d9d0]">
+                      A alteração só é publicada quando carregares em GUARDAR PERSONALIZAÇÃO.
+                    </p>
+                  </div>
+
                   {/* LEMA */}
 
                   <label className="block">
@@ -1462,7 +1643,7 @@ export default function EditarPerfilMCPage() {
                   </button>
                 </form>
 
-                {/* PRÉ-VISUALIZAÇÃO DAS CORES */}
+                {/* PRÉ-VISUALIZAÇÃO DA CAPA E DAS CORES */}
 
                 <div className="relative flex min-h-72 flex-col justify-between overflow-hidden border-t border-[#d6b56d]/40 p-6 lg:border-l lg:border-t-0">
                   <div
@@ -1485,14 +1666,24 @@ export default function EditarPerfilMCPage() {
                     }}
                   />
 
+                  {(capaLocal || (!capaRemovida ? personalizacao.capa_url.trim() : "")) && !erroCapaPreview && (
+                    <img
+                      src={capaLocal || personalizacao.capa_url.trim()}
+                      alt=""
+                      aria-hidden="true"
+                      onError={() => setErroCapaPreview(true)}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  )}
+
                   <div
                     aria-hidden="true"
-                    className="absolute inset-0 bg-black/50"
+                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/55 to-black/30"
                   />
 
                   <div className="relative">
                     <p className="text-xs font-black uppercase tracking-widest text-white/90">
-                      PRÉ-VISUALIZAÇÃO DAS CORES
+                      PRÉ-VISUALIZAÇÃO · CAPA E CORES
                     </p>
 
                     <div

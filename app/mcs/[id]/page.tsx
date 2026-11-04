@@ -30,6 +30,7 @@ type PersonalizacaoMC = {
   cor_destaque: string;
   cor_fundo: string;
   cor_lema: string | null;
+  capa_url: string | null;
   capa_fotografia_id: string | null;
   fundo_fotografia_id: string | null;
   ordem_seccoes: string[];
@@ -701,7 +702,7 @@ export default function PerfilMCPage() {
           supabase
             .from("mc_personalizacao")
             .select(
-              "mc_id,lema,cor_destaque,cor_fundo,cor_lema,capa_fotografia_id,fundo_fotografia_id,ordem_seccoes",
+              "mc_id,lema,cor_destaque,cor_fundo,cor_lema,capa_url,capa_fotografia_id,fundo_fotografia_id,ordem_seccoes",
             )
             .eq("mc_id", mcId)
             .maybeSingle(),
@@ -1657,6 +1658,8 @@ export default function PerfilMCPage() {
     personalizacao?.lema?.trim() ??
     "";
 
+  const capaUrl = obterUrl(personalizacao?.capa_url);
+
   const localizacao = [
     mc.cidade,
     mc.distrito,
@@ -1837,7 +1840,7 @@ export default function PerfilMCPage() {
             <span className="flex-1 bg-[#b82535]" />
           </div>
 
-          {/* CAPA PERSONALIZADA */}
+          {/* CAPA PERSONALIZADA PELO MC */}
 
           <div
             className="relative min-h-48 overflow-hidden sm:min-h-64 lg:min-h-72"
@@ -1846,18 +1849,31 @@ export default function PerfilMCPage() {
                 `linear-gradient(120deg, ${corFundo} 8%, ${corDestaque} 190%)`,
             }}
           >
+            {capaUrl && (
+              <img
+                src={capaUrl}
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              />
+            )}
+
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 opacity-20"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(-18deg,transparent 0px,transparent 32px,#fff 33px,#fff 34px)",
-              }}
+              className={`pointer-events-none absolute inset-0 ${capaUrl ? "bg-gradient-to-t from-black/85 via-black/45 to-black/30" : "opacity-20"}`}
+              style={
+                capaUrl
+                  ? undefined
+                  : {
+                      backgroundImage:
+                        "repeating-linear-gradient(-18deg,transparent 0px,transparent 32px,#fff 33px,#fff 34px)",
+                    }
+              }
             />
 
             <div
               aria-hidden="true"
-              className="absolute -right-16 -top-36 h-80 w-80 rotate-12 border-[24px] opacity-25 sm:right-16"
+              className={`absolute -right-16 -top-36 h-80 w-80 rotate-12 border-[24px] sm:right-16 ${capaUrl ? "opacity-10" : "opacity-25"}`}
               style={{
                 borderColor:
                   corDestaque,
