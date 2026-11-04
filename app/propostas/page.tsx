@@ -204,7 +204,7 @@ export default function PropostasImipPage() {
                     </button>
                   ))}
                 </section>
-                {ativa ? <ConversaImip proposta={ativa} userId={userId} suporte={false} onAtividade={() => void carregar(userId)} /> : <div className="border border-white/20 bg-black/50 p-6 text-sm text-zinc-300">Escolhe uma conversa para ler ou enviar mensagens. As respostas aparecem aqui sem necessidade de WhatsApp.</div>}
+                {ativa ? <ConversaImip key={ativa.id} proposta={ativa} userId={userId} suporte={false} onAtividade={() => void carregar(userId)} /> : <div className="border border-white/20 bg-black/50 p-6 text-sm text-zinc-300">Escolhe uma conversa para ler ou enviar mensagens. As respostas aparecem aqui sem necessidade de WhatsApp.</div>}
               </div>
             )}
           </div>
