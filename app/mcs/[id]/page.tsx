@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { consultarTodas } from "../../../lib/consultar-todas";
+import { obterIdsEdicoesHistorico } from "../../../lib/historico-mc";
 import { PedirAcessoMC } from "./pedir-acesso";
 import { boldIMIP, veneerIMIP } from "../../fonts/identidade";
 
@@ -624,6 +625,7 @@ export default function PerfilMCPage() {
           mcResposta,
           todasPontuacoes,
           todasBatalhas,
+          participacoesMcParaHistorico,
           todosMcs,
           epocasResposta,
           personalizacaoResposta,
@@ -657,6 +659,17 @@ export default function PerfilMCPage() {
                   "id,edicao_id,vitoria_2_0",
                 )
                 .order("id")
+                .range(inicio, fim),
+          ),
+
+          // Também inclui MCs que participaram mas não somaram pontos.
+          consultarTodas<Participacao>(
+            (inicio, fim) =>
+              supabase
+                .from("participacoes")
+                .select("batalha_id,mc_id,lado,venceu")
+                .eq("mc_id", mcId)
+                .order("batalha_id")
                 .range(inicio, fim),
           ),
 
@@ -838,14 +851,11 @@ export default function PerfilMCPage() {
               item.mc_id === mcId,
           );
 
-        const idsHistorico = [
-          ...new Set(
-            pontosMcHistorico.map(
-              (item) =>
-                item.edicao_id,
-            ),
-          ),
-        ];
+        const idsHistorico = obterIdsEdicoesHistorico(
+          pontosMcHistorico,
+          participacoesMcParaHistorico,
+          todasBatalhas,
+        );
 
         const edicoesHistorico:
           Edicao[] = [];
