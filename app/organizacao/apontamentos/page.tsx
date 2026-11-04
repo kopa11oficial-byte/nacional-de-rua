@@ -558,6 +558,7 @@ export default function ApontamentosPage() {
           fase: batalha.fase,
           pontos_lado_a: batalha.pontosEquipa1,
           pontos_lado_b: batalha.pontosEquipa2,
+          pontos_lado_c: batalha.resultadosIndividuais?.[2] ?? null,
           vitoria_2_0: batalha.bonusDoisZero,
           participacoes: participacoesResolvidas,
           pontuacoes,
@@ -591,7 +592,10 @@ export default function ApontamentosPage() {
         permanencias.length,
       );
 
-      if (total === 0) {
+      if (
+        total === 0 &&
+        !batalhas.every((batalha) => batalha.fase === "PRÉ-FASE")
+      ) {
         throw new Error(
           "Não existem pontuações válidas para guardar.",
         );
@@ -848,9 +852,12 @@ export default function ApontamentosPage() {
 
                   {batalha.participantesIndividuais ? (
                     <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                      {batalha.participantesIndividuais.map((nome) => (
+                      {batalha.participantesIndividuais.map((nome, indice) => (
                         <div key={nome} className="border border-[#d6b56d]/40 p-4 text-center">
                           <p className="break-words text-lg font-black uppercase">{nome}</p>
+                          <span className={`${boldIMIP.className} mt-3 inline-flex min-w-16 justify-center bg-[#d6b56d] px-4 py-2 text-3xl font-bold text-[#101713]`}>
+                            {batalha.resultadosIndividuais?.[indice] ?? 0}
+                          </span>
                           <p className="mt-2 text-xs font-black text-[#d6b56d]">
                             {batalha.vencedores.includes(nome) ? "VENCEDOR" : "PARTICIPANTE"}
                           </p>
