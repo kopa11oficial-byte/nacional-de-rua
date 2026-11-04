@@ -224,6 +224,44 @@ function interpretarBatalha(
   return null;
 }
 
+/**
+ * Double Tri: três MCs independentes e um único vencedor.
+ * Exemplo: MC A vs MC B vs MC C — vencedor: MC B
+ * O resultado pode ser escrito sem a indicação "Double Tri:".
+ */
+function interpretarDoubleTri(
+  linha: string,
+): { participantes: string[]; vencedor: string } | null {
+  const texto = retirarNumeroInicial(linha)
+    .replace(/^double[\s-]*tri\s*[:\-–—]?\s*/i, "")
+    .trim();
+
+  const resultado = texto.match(
+    /^(.+?)\s*(?:[|;]|[–—-])\s*(?:vencedor(?:a)?|vence|ganhou)\s*:?\s*(.+)$/i,
+  );
+
+  if (!resultado) return null;
+
+  const participantes = resultado[1]
+    .split(/\s+(?:vs\.?|x|\/)\s+/i)
+    .map((nome) => nome.trim())
+    .filter(Boolean);
+
+  const vencedor = resultado[2].trim().replace(/[.!]+$/, "");
+
+  if (
+    participantes.length !== 3 ||
+    new Set(participantes.map(normalizarTexto)).size !== 3 ||
+    !participantes.some(
+      (nome) => normalizarTexto(nome) === normalizarTexto(vencedor),
+    )
+  ) {
+    return null;
+  }
+
+  return { participantes, vencedor };
+}
+
 function criarClassificacao(
   pontos: Record<string, number>,
   doisZero: Record<string, number>,
@@ -244,6 +282,11 @@ function criarClassificacao(
       const confronto = [...batalhas]
         .reverse()
         .find((batalha) => {
+          if (batalha.participantesIndividuais) {
+            const mcs = batalha.participantesIndividuais.map(normalizarNome);
+            return mcs.includes(a) && mcs.includes(b);
+          }
+
           const lado1 =
             batalha.equipa1.map(normalizarNome);
 
@@ -456,6 +499,71 @@ export function processarNormal(
         linha += ` ${linhas[proxima].trim()}`;
         indice = proxima;
       }
+    }
+
+    const doubleTri = interpretarDoubleTri(linha);
+
+    if (doubleTri) {
+      // A repescagem tem regras próprias de um confronto 1x1.
+      if (faseAtual === "REPESCAGEM") {
+        linhasIgnoradas.push(
+          `Linha ${indice + 1}: ${linha} — Double Tri não é aceite na REPESCAGEM`,
+        );
+        continue;
+      }
+
+      const participantes = doubleTri.participantes.map(prepararMC);
+      const chaveVencedora = normalizarNome(
+        obterNomeOficial(doubleTri.vencedor),
+      );
+
+      if (
+        participantes.some((mc) => !mc.chave) ||
+        new Set(participantes.map((mc) => mc.chave)).size !== 3 ||
+        !participantes.some((mc) => mc.chave === chaveVencedora)
+      ) {
+        linhasIgnoradas.push(
+          `Linha ${indice + 1}: ${linha} — participantes Double Tri inválidos`,
+        );
+        continue;
+      }
+
+      const inscritos = participantes.map(registarMC);
+      const vencedor = inscritos.find((mc) => mc.chave === chaveVencedora)!;
+      const derrotados = inscritos.filter((mc) => mc.chave !== chaveVencedora);
+      const pontosBatalha = pontosDaFase(faseAtual);
+
+      pontos[vencedor.chave] += pontosBatalha;
+
+      batalhas.push({
+        fase: faseAtual,
+        // Mantemos os campos existentes para compatibilidade com os
+        // rankings; participantesIndividuais identifica o verdadeiro 1x1x1.
+        equipa1: [inscritos[0].nome],
+        equipa2: [inscritos[1].nome, inscritos[2].nome],
+        pontosEquipa1: 0,
+        pontosEquipa2: 0,
+        participantesIndividuais: inscritos.map((mc) => mc.nome),
+        vencedores: [vencedor.nome],
+        derrotados: derrotados.map((mc) => mc.nome),
+        resultado: `DOUBLE TRI — vencedor: ${vencedor.nome}`,
+        bonusDoisZero: false,
+        pontuacoes:
+          faseAtual === "PRÉ-FASE"
+            ? []
+            : [{
+                nome: vencedor.nome,
+                pontos: pontosBatalha,
+                motivo: `${faseAtual} — vitória Double Tri`,
+              }],
+        detalhes: [
+          "Double Tri — três MCs individuais, um único vencedor; sem bónus 2–0",
+          ...(faseAtual === "PRÉ-FASE"
+            ? ["Pré-fase — apuramento sem pontuação"]
+            : []),
+        ],
+      });
+      continue;
     }
 
     const resultado = interpretarBatalha(linha);
