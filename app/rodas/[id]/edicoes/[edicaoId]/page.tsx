@@ -21,13 +21,16 @@ type Batalha = {
   numero: number;
   pontos_lado_a: number;
   pontos_lado_b: number;
+  pontos_lado_c: number | null;
   vitoria_2_0: boolean;
+  double_tri: boolean;
 };
 
 type Participacao = {
   batalha_id: string;
   mc_id: string;
   lado: string;
+  venceu: boolean;
 };
 
 type Pontuacao = {
@@ -106,7 +109,7 @@ export default function ResultadosEdicaoPage() {
               supabase
                 .from("batalhas")
                 .select(
-                  "id,fase,numero,pontos_lado_a,pontos_lado_b,vitoria_2_0",
+                  "id,fase,numero,pontos_lado_a,pontos_lado_b,pontos_lado_c,vitoria_2_0,double_tri",
                 )
                 .eq("edicao_id", edicaoId)
                 .order("numero")
@@ -135,7 +138,7 @@ export default function ResultadosEdicaoPage() {
             ? await consultarTodas<Participacao>((inicio, fim) =>
                 supabase
                   .from("participacoes")
-                  .select("batalha_id,mc_id,lado")
+                  .select("batalha_id,mc_id,lado,venceu")
                   .in("batalha_id", idsBatalhas)
                   .order("batalha_id")
                   .order("mc_id")
@@ -375,6 +378,13 @@ export default function ResultadosEdicaoPage() {
                         )
                         .join(" e ");
 
+                    const participantesDoubleTri = participacoes
+                      .filter((item) => item.batalha_id === batalha.id)
+                      .map((item) => ({
+                        ...item,
+                        nome: mcs.get(item.mc_id)?.nome_artistico ?? "MC",
+                      }));
+
                     return (
                       <div
                         key={batalha.id}
@@ -384,12 +394,31 @@ export default function ResultadosEdicaoPage() {
                           {batalha.fase} · BATALHA {batalha.numero}
                         </p>
 
-                        <p className="mt-3 break-words font-bold text-white">
-                          {nomesLado("A") || "Lado A"}{" "}
-                          {batalha.pontos_lado_a} –{" "}
-                          {batalha.pontos_lado_b}{" "}
-                          {nomesLado("B") || "Lado B"}
-                        </p>
+                        {batalha.double_tri ? (
+                          <div className="mt-3">
+                            <p className="text-xs font-black text-yellow-500">DOUBLE TRI · 3 MCs · 1 VENCEDOR</p>
+                            <p className="mt-2 break-words font-bold text-white">
+                              {participantesDoubleTri.map((item) => {
+                                const placares: Record<string, number | null> = {
+                                  A: batalha.pontos_lado_a,
+                                  B: batalha.pontos_lado_b,
+                                  C: batalha.pontos_lado_c,
+                                };
+                                return `${item.nome} ${placares[item.lado] ?? 0}`;
+                              }).join(" vs ")}
+                            </p>
+                            <p className="mt-2 font-black text-yellow-500">
+                              VENCEDOR: {participantesDoubleTri.find((item) => item.venceu)?.nome ?? "Por confirmar"}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-3 break-words font-bold text-white">
+                            {nomesLado("A") || "Lado A"}{" "}
+                            {batalha.pontos_lado_a} –{" "}
+                            {batalha.pontos_lado_b}{" "}
+                            {nomesLado("B") || "Lado B"}
+                          </p>
+                        )}
                       </div>
                     );
                   })}

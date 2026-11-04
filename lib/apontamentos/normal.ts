@@ -224,6 +224,76 @@ function interpretarBatalha(
   return null;
 }
 
+/**
+ * Double Tri: três MCs independentes e um único vencedor.
+ * Exemplo: MC A vs MC B vs MC C — vencedor: MC B
+ * O resultado pode ser escrito sem a indicação "Double Tri:".
+ */
+function interpretarDoubleTri(
+  linha: string,
+): {
+  participantes: [string, string, string];
+  resultados: [number, number, number];
+  vencedor: string;
+} | null {
+  const texto = retirarNumeroInicial(linha)
+    .replace(/^double[\s-]*tri\s*[:\-–—]?\s*/i, "")
+    .trim();
+
+  // Três resultados individuais: MZ 0 vs DZ 0 vs CHESS 2.
+  const marcado = texto.match(
+    /^(.+?)\s+(\d+)\s+vs\.?\s+(.+?)\s+(\d+)\s+vs\.?\s+(.+?)\s+(\d+)$/i,
+  );
+
+  if (marcado) {
+    const participantes = [
+      marcado[1].trim(), marcado[3].trim(), marcado[5].trim(),
+    ] as [string, string, string];
+    const resultados = [
+      Number(marcado[2]), Number(marcado[4]), Number(marcado[6]),
+    ] as [number, number, number];
+
+    const maior = Math.max(...resultados);
+    if (
+      participantes.some((nome) => !nome) ||
+      new Set(participantes.map(normalizarTexto)).size !== 3 ||
+      resultados.filter((resultado) => resultado === maior).length !== 1
+    ) {
+      return null;
+    }
+    return {
+      participantes,
+      resultados,
+      vencedor: participantes[resultados.indexOf(maior)],
+    };
+  }
+
+  // Alternativa descritiva: MZ vs DZ vs CHESS — vencedor: CHESS.
+  const explicito = texto.match(
+    /^(.+?)\s*(?:[|;]|[–—-])\s*(?:vencedor(?:a)?|vence|ganhou)\s*:?\s*(.+)$/i,
+  );
+  if (!explicito) return null;
+  const nomes = explicito[1]
+    .split(/\s+(?:vs\.?|x|\/)\s+/i)
+    .map((nome) => nome.trim())
+    .filter(Boolean);
+  const vencedor = explicito[2].trim().replace(/[.!]+$/, "");
+  if (
+    nomes.length !== 3 ||
+    new Set(nomes.map(normalizarTexto)).size !== 3 ||
+    !nomes.some((nome) => normalizarTexto(nome) === normalizarTexto(vencedor))
+  ) {
+    return null;
+  }
+  return {
+    participantes: nomes as [string, string, string],
+    resultados: nomes.map((nome) =>
+      normalizarTexto(nome) === normalizarTexto(vencedor) ? 2 : 0,
+    ) as [number, number, number],
+    vencedor,
+  };
+}
+
 function criarClassificacao(
   pontos: Record<string, number>,
   doisZero: Record<string, number>,
@@ -244,6 +314,11 @@ function criarClassificacao(
       const confronto = [...batalhas]
         .reverse()
         .find((batalha) => {
+          if (batalha.participantesIndividuais) {
+            const mcs = batalha.participantesIndividuais.map(normalizarNome);
+            return mcs.includes(a) && mcs.includes(b);
+          }
+
           const lado1 =
             batalha.equipa1.map(normalizarNome);
 
@@ -456,6 +531,81 @@ export function processarNormal(
         linha += ` ${linhas[proxima].trim()}`;
         indice = proxima;
       }
+    }
+
+    const doubleTri = interpretarDoubleTri(linha);
+
+    if (doubleTri) {
+      // A repescagem tem regras próprias de um confronto 1x1.
+      if (faseAtual === "REPESCAGEM") {
+        linhasIgnoradas.push(
+          `Linha ${indice + 1}: ${linha} — Double Tri não é aceite na REPESCAGEM`,
+        );
+        continue;
+      }
+
+      const participantes = doubleTri.participantes.map(prepararMC);
+      const chaveVencedora = normalizarNome(
+        obterNomeOficial(doubleTri.vencedor),
+      );
+
+      if (
+        participantes.some((mc) => !mc.chave) ||
+        new Set(participantes.map((mc) => mc.chave)).size !== 3 ||
+        !participantes.some((mc) => mc.chave === chaveVencedora)
+      ) {
+        linhasIgnoradas.push(
+          `Linha ${indice + 1}: ${linha} — participantes Double Tri inválidos`,
+        );
+        continue;
+      }
+
+      const inscritos = participantes.map(registarMC);
+      const vencedor = inscritos.find((mc) => mc.chave === chaveVencedora)!;
+      const derrotados = inscritos.filter((mc) => mc.chave !== chaveVencedora);
+      const pontosBatalha = pontosDaFase(faseAtual);
+
+      pontos[vencedor.chave] += pontosBatalha;
+
+      batalhas.push({
+        fase: faseAtual,
+        // Mantemos os campos existentes para compatibilidade com os
+        // rankings; participantesIndividuais identifica o verdadeiro 1x1x1.
+        equipa1: [inscritos[0].nome],
+        equipa2: [inscritos[1].nome, inscritos[2].nome],
+        pontosEquipa1: doubleTri.resultados[0],
+        pontosEquipa2: doubleTri.resultados[1],
+        participantesIndividuais: inscritos.map((mc) => mc.nome),
+        resultadosIndividuais: doubleTri.resultados,
+        vencedores: [vencedor.nome],
+        derrotados: derrotados.map((mc) => mc.nome),
+        resultado: `${doubleTri.resultados.join("-")} — vencedor: ${vencedor.nome}`,
+        bonusDoisZero: false,
+        pontuacoes:
+          faseAtual === "PRÉ-FASE"
+            ? []
+            : [{
+                nome: vencedor.nome,
+                pontos: pontosBatalha,
+                motivo: `${faseAtual} — vitória Double Tri`,
+              }],
+        detalhes: [
+          "Double Tri — três MCs individuais, um único vencedor; sem bónus 2–0",
+          ...(faseAtual === "PRÉ-FASE"
+            ? ["Pré-fase — apuramento sem pontuação"]
+            : []),
+        ],
+      });
+      continue;
+    }
+
+    // Um confronto com dois "vs" não pode voltar ao leitor 1x1
+    // quando o Double Tri é inválido (por exemplo, empate no topo).
+    if ((linha.match(/\bvs\.?\b/gi) ?? []).length >= 2) {
+      linhasIgnoradas.push(
+        `Linha ${indice + 1}: ${linha} — Double Tri inválido; é obrigatório um vencedor único`,
+      );
+      continue;
     }
 
     const resultado = interpretarBatalha(linha);

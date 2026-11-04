@@ -500,16 +500,23 @@ export default function ApontamentosPage() {
           ),
         );
 
-        const participacoes = [
-          ...batalha.equipa1.map((nome) => ({
-            nome,
-            lado: "A",
-          })),
-          ...batalha.equipa2.map((nome) => ({
-            nome,
-            lado: "B",
-          })),
-        ].map(({ nome, lado }) => {
+        const participacoes = batalha.participantesIndividuais
+          ? batalha.participantesIndividuais.map((nome, indice) => ({
+              nome,
+              lado: ["A", "B", "C"][indice],
+            }))
+          : [
+              ...batalha.equipa1.map((nome) => ({
+                nome,
+                lado: "A",
+              })),
+              ...batalha.equipa2.map((nome) => ({
+                nome,
+                lado: "B",
+              })),
+            ];
+
+        const participacoesResolvidas = participacoes.map(({ nome, lado }) => {
           const mc = mcsPorNomeAtualizado.get(
             normalizarTexto(nome),
           );
@@ -551,9 +558,11 @@ export default function ApontamentosPage() {
           fase: batalha.fase,
           pontos_lado_a: batalha.pontosEquipa1,
           pontos_lado_b: batalha.pontosEquipa2,
+          pontos_lado_c: batalha.resultadosIndividuais?.[2] ?? null,
           vitoria_2_0: batalha.bonusDoisZero,
-          participacoes,
+          participacoes: participacoesResolvidas,
           pontuacoes,
+          double_tri: Boolean(batalha.participantesIndividuais),
         };
       });
 
@@ -583,7 +592,10 @@ export default function ApontamentosPage() {
         permanencias.length,
       );
 
-      if (total === 0) {
+      if (
+        total === 0 &&
+        !batalhas.every((batalha) => batalha.fase === "PRÉ-FASE")
+      ) {
         throw new Error(
           "Não existem pontuações válidas para guardar.",
         );
@@ -838,6 +850,26 @@ export default function ApontamentosPage() {
                     </span>
                   </div>
 
+                  {batalha.participantesIndividuais ? (
+                    <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                      {batalha.participantesIndividuais.map((nome, indice) => (
+                        <div key={nome} className="flex items-center gap-3">
+                          {indice > 0 && (
+                            <span className="text-xs font-black text-[#d6b56d]">VS</span>
+                          )}
+                          <div className="min-w-24 border border-[#d6b56d]/40 p-4 text-center sm:min-w-36">
+                            <p className="break-words text-lg font-black uppercase">{nome}</p>
+                            <span className={`${boldIMIP.className} mt-3 inline-flex min-w-16 justify-center bg-[#d6b56d] px-4 py-2 text-3xl font-bold text-[#101713]`}>
+                              {batalha.resultadosIndividuais?.[indice] ?? 0}
+                            </span>
+                            <p className="mt-2 text-xs font-black text-[#d6b56d]">
+                              {batalha.vencedores.includes(nome) ? "VENCEDOR" : "PARTICIPANTE"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
                   <div className="mt-6 grid items-center gap-5 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
                     <div className="min-w-0 text-center sm:text-right">
                       <p className="break-words text-lg font-black uppercase">
@@ -867,6 +899,8 @@ export default function ApontamentosPage() {
                       </span>
                     </div>
                   </div>
+
+                  )}
 
                   <div className="mt-6 border-t border-[#d6b56d]/25 pt-5">
                     <p className="text-sm text-[#d2d9d0]">

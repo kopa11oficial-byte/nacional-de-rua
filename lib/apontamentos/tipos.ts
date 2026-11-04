@@ -26,6 +26,10 @@ export type BatalhaInterpretada = {
   pontosEquipa1: number;
   equipa2: string[];
   pontosEquipa2: number;
+  /** Três adversários individuais, nunca uma equipa ou dupla. */
+  participantesIndividuais?: string[];
+  /** Placar individual na ordem dos três participantes; não são pontos de ranking. */
+  resultadosIndividuais?: [number, number, number];
   vencedores: string[];
   derrotados: string[];
   resultado: string;

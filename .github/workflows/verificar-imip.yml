@@ -33,5 +33,7 @@ jobs:
         run: npx tsc --noEmit
       - name: Testar pontuação de chaves de 8 e 16
         run: node scripts/testar-chaves-normal.cjs
+      - name: Testar Double Tri e pré-fase
+        run: node scripts/testar-double-tri.cjs
       - name: Compilar Next.js
         run: npm run build
