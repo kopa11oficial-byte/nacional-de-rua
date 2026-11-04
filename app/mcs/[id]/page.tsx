@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { consultarTodas } from "../../../lib/consultar-todas";
-import { obterIdsEdicoesHistorico } from "../../../lib/historico-mc";
+import { obterIdsEdicoesHistorico, contarBatalhasPorEdicao } from "../../../lib/historico-mc";
 import { PedirAcessoMC } from "./pedir-acesso";
 import { boldIMIP, veneerIMIP } from "../../fonts/identidade";
 
@@ -100,6 +100,7 @@ type HistoricoItem = {
   roda: string;
   data: string;
   pontos: number;
+  batalhas: number;
 };
 
 type Estatisticas = {
@@ -1319,16 +1320,32 @@ export default function PerfilMCPage() {
               );
             });
 
-        const participacoesMc =
-          participacoes.filter(
-            (item) =>
-              item.mc_id === mcId,
+        // O contador de participações inclui também edições e
+        // batalhas em que ninguém somou pontos (ex.: pré-fase).
+        // O cálculo do ranking nacional acima não é alterado.
+        const batalhasEpocaPorId = new Map(
+          todasBatalhas
+            .filter((batalha) => idsEpoca.has(batalha.edicao_id))
+            .map((batalha) => [batalha.id, batalha]),
+        );
+
+        const participacoesMcCompletas =
+          participacoesMcParaHistorico.filter((item) =>
+            batalhasEpocaPorId.has(item.batalha_id),
           );
 
+        const edicoesMcCompletas = new Set(
+          edicoesPorMc.get(mcId) ?? [],
+        );
+
+        for (const item of participacoesMcCompletas) {
+          const batalha = batalhasEpocaPorId.get(item.batalha_id);
+          if (batalha) edicoesMcCompletas.add(batalha.edicao_id);
+        }
+
         const vitorias =
-          participacoesMc.filter(
-            (item) =>
-              item.venceu,
+          participacoesMcCompletas.filter(
+            (item) => item.venceu,
           ).length;
 
         if (!ativo) return;
@@ -1350,18 +1367,14 @@ export default function PerfilMCPage() {
               mcId,
             ) ?? 0,
 
-          participacoes:
-            edicoesPorMc.get(
-              mcId,
-            )?.size ?? 0,
+          participacoes: edicoesMcCompletas.size,
 
-          batalhas:
-            participacoesMc.length,
+          batalhas: participacoesMcCompletas.length,
 
           vitorias,
 
           derrotas:
-            participacoesMc.length -
+            participacoesMcCompletas.length -
             vitorias,
         });
 
@@ -1450,6 +1463,11 @@ export default function PerfilMCPage() {
 
         if (!ativo) return;
 
+        const batalhasPorEdicao = contarBatalhasPorEdicao(
+          participacoesMcParaHistorico,
+          todasBatalhas,
+        );
+
         setHistorico(
           edicoesHistorico
             .map((item) => ({
@@ -1472,6 +1490,8 @@ export default function PerfilMCPage() {
                 pontosPorEdicao.get(
                   item.id,
                 ) ?? 0,
+
+              batalhas: batalhasPorEdicao.get(item.id) ?? 0,
             }))
             .sort((a, b) =>
               b.data.localeCompare(
@@ -2413,6 +2433,9 @@ export default function PerfilMCPage() {
                         {formatarData(
                           item.data,
                         )}
+                      </p>
+                      <p className="mt-1 text-xs font-bold text-[#d6b56d]">
+                        {item.batalhas} {item.batalhas === 1 ? "BATALHA" : "BATALHAS"} REGISTADAS
                       </p>
                     </div>
 
