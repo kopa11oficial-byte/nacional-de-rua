@@ -2,6 +2,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type AreaId =
@@ -16,7 +17,6 @@ type Area = {
   nome: string;
   descricao: string;
   imagem: string;
-  telefone: string | null;
 };
 
 const areas: Area[] = [
@@ -25,53 +25,32 @@ const areas: Area[] = [
     nome: "Suporte Geral",
     descricao: "Coordenação nacional",
     imagem: "/suportes/SUPORTE_GERAL.png",
-    telefone: "351961901107",
   },
   {
     id: "jurados",
-    nome: "Jurados e Arbitragem",
-    descricao: "Regras e decisões",
+    nome: "Suporte Norte",
+    descricao: "Acompanhamento regional · Norte",
     imagem: "/suportes/JURADOS_E_ARBITRAGEM.png",
-    telefone: null,
   },
   {
     id: "rodas",
-    nome: "Rodas e Organizações",
-    descricao: "Gestão das rodas",
+    nome: "Suporte Centro",
+    descricao: "Acompanhamento regional · Centro",
     imagem: "/suportes/RODAS_E_ORGANIZACOES.png",
-    telefone: null,
   },
   {
     id: "mcs",
-    nome: "MCs e Participação",
-    descricao: "Perfis e inscrições",
+    nome: "Suporte Lisboa e Margem Sul",
+    descricao: "Acompanhamento regional · Lisboa e Margem Sul",
     imagem: "/suportes/MCS_E_PARTICIPACAO.png",
-    telefone: null,
   },
   {
     id: "ranking",
-    nome: "Ranking e Resultados",
-    descricao: "Pontos e classificações",
+    nome: "Suporte Algarve",
+    descricao: "Acompanhamento regional · Algarve",
     imagem: "/suportes/RANKING_E_RESULTADOS.png",
-    telefone: null,
   },
 ];
-
-function obterWhatsApp(area: Area): string | null {
-  if (!area.telefone) {
-    return null;
-  }
-
-  const mensagem =
-    area.id === "geral"
-      ? "Olá! Preciso de ajuda com o Nacional de Rua."
-      : `Olá! Preciso de ajuda com ${area.nome} no Nacional de Rua.`;
-
-  return (
-    `https://wa.me/${area.telefone}?text=` +
-    encodeURIComponent(mensagem)
-  );
-}
 
 export default function SuportesFlutuantes() {
   const [aberto, setAberto] = useState(false);
@@ -277,7 +256,7 @@ export default function SuportesFlutuantes() {
                 </h2>
 
                 <p className="mt-2 text-xs leading-relaxed text-zinc-400">
-                  Cinco áreas de suporte à comunidade.
+                  Quatro regiões e o Suporte Geral IMIP.
                 </p>
               </div>
 
@@ -323,8 +302,6 @@ export default function SuportesFlutuantes() {
               {areas.map((area) => {
                 const selecionada =
                   areaSelecionada === area.id;
-
-                const whatsapp = obterWhatsApp(area);
 
                 return (
                   <div
@@ -398,57 +375,18 @@ export default function SuportesFlutuantes() {
 
                     {selecionada && (
                       <div className="mb-4 ml-2 rounded-lg border-l-2 border-[#d9b45f] bg-white/[0.04] px-4 py-3">
-                        {area.id === "geral" ? (
-                          <p className="text-xs leading-relaxed text-zinc-200">
-                            Precisas de ajuda com o
-                            Nacional de Rua? Contacta
-                            diretamente o Suporte Geral
-                            através do WhatsApp.
-                          </p>
-                        ) : (
-                          <p className="text-xs leading-relaxed text-zinc-200">
-                            Esta área terá um responsável
-                            próprio. O contacto será
-                            disponibilizado depois da
-                            atribuição.
-                          </p>
-                        )}
-
-                        {area.id === "geral" && (
-                          <a
-                            href="mailto:imip.nacional@gmail.com?subject=Suporte%20IMIP"
-                            className="mt-3 block break-all text-xs font-bold text-[#e4c46d] underline-offset-4 hover:underline"
-                          >
-                            EMAIL OFICIAL · imip.nacional@gmail.com
-                          </a>
-                        )}
-
-                        {whatsapp ? (
-                          <a
-                            href={whatsapp}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={
-                              "mt-3 inline-flex " +
-                              "items-center justify-center " +
-                              "rounded-lg bg-[#d9b45f] " +
-                              "px-4 py-2.5 " +
-                              "text-xs font-black " +
-                              "uppercase text-black " +
-                              "transition-colors " +
-                              "hover:bg-[#f0cb73] " +
-                              "focus-visible:outline-2 " +
-                              "focus-visible:outline-offset-2 " +
-                              "focus-visible:outline-[#f0cb73]"
-                            }
-                          >
-                            ABRIR WHATSAPP ↗
-                          </a>
-                        ) : (
-                          <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-[#e4c46d]">
-                            CONTACTO POR ATRIBUIR
-                          </p>
-                        )}
+                        <p className="text-xs leading-relaxed text-zinc-200">
+                          {area.id === "geral"
+                            ? "Coordenação nacional das propostas e das conversas."
+                            : "O suporte regional recebe as propostas na Central de Comunicação IMIP. Acompanha as respostas sem sair do site."}
+                        </p>
+                        <Link
+                          href="/propostas"
+                          onClick={fechar}
+                          className="mt-3 inline-flex min-h-11 items-center rounded-lg bg-[#d9b45f] px-4 py-2.5 text-xs font-black uppercase text-black transition hover:bg-[#f0cb73]"
+                        >
+                          CONTACTAR NO SITE ↗
+                        </Link>
                       </div>
                     )}
                   </div>
