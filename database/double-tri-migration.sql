@@ -3,6 +3,8 @@
 BEGIN;
 ALTER TABLE public.batalhas
  ADD COLUMN IF NOT EXISTS double_tri boolean NOT NULL DEFAULT false;
+ALTER TABLE public.batalhas
+ ADD COLUMN IF NOT EXISTS pontos_lado_c integer CHECK (pontos_lado_c IS NULL OR pontos_lado_c >= 0);
 ALTER TABLE public.participacoes
  DROP CONSTRAINT IF EXISTS participacoes_lado_check;
 ALTER TABLE public.participacoes
@@ -188,8 +190,21 @@ BEGIN
     -- DOUBLE TRI: tres participantes individuais, um unico vencedor.
     IF COALESCE((v_batalha->>'double_tri')::boolean, FALSE) THEN
       IF jsonb_array_length(v_batalha->'participacoes') <> 3
-         OR (v_batalha->>'pontos_lado_a')::integer <> 0
-         OR (v_batalha->>'pontos_lado_b')::integer <> 0
+         OR v_batalha->>'pontos_lado_c' IS NULL
+         OR (v_batalha->>'pontos_lado_c')::integer < 0
+         OR (
+           SELECT count(*)
+           FROM (VALUES
+             ((v_batalha->>'pontos_lado_a')::integer),
+             ((v_batalha->>'pontos_lado_b')::integer),
+             ((v_batalha->>'pontos_lado_c')::integer)
+           ) AS placares(valor)
+           WHERE valor = GREATEST(
+             (v_batalha->>'pontos_lado_a')::integer,
+             (v_batalha->>'pontos_lado_b')::integer,
+             (v_batalha->>'pontos_lado_c')::integer
+           )
+         ) <> 1
          OR (v_batalha->>'vitoria_2_0')::boolean <> FALSE
          OR v_batalha->>'fase' = 'REPESCAGEM'
          OR (
@@ -206,6 +221,20 @@ BEGIN
            SELECT COUNT(DISTINCT item->>'mc_id')
            FROM jsonb_array_elements(v_batalha->'participacoes') item
          ) <> 3
+         OR EXISTS (
+           SELECT 1
+           FROM jsonb_array_elements(v_batalha->'participacoes') item
+           WHERE (item->>'venceu' = 'true') IS DISTINCT FROM
+             CASE item->>'lado'
+               WHEN 'A' THEN (v_batalha->>'pontos_lado_a')::integer
+                 = GREATEST((v_batalha->>'pontos_lado_a')::integer, (v_batalha->>'pontos_lado_b')::integer, (v_batalha->>'pontos_lado_c')::integer)
+               WHEN 'B' THEN (v_batalha->>'pontos_lado_b')::integer
+                 = GREATEST((v_batalha->>'pontos_lado_a')::integer, (v_batalha->>'pontos_lado_b')::integer, (v_batalha->>'pontos_lado_c')::integer)
+               WHEN 'C' THEN (v_batalha->>'pontos_lado_c')::integer
+                 = GREATEST((v_batalha->>'pontos_lado_a')::integer, (v_batalha->>'pontos_lado_b')::integer, (v_batalha->>'pontos_lado_c')::integer)
+               ELSE false
+             END
+         )
       THEN
         RAISE EXCEPTION 'Double Tri invalido na batalha %: exige 3 MCs diferentes e 1 vencedor', v_numero;
       END IF;
@@ -220,6 +249,7 @@ BEGIN
       ordem,
       pontos_lado_a,
       pontos_lado_b,
+      pontos_lado_c,
       vitoria_2_0,
       double_tri
     )
@@ -230,6 +260,7 @@ BEGIN
       v_numero,
       (v_batalha->>'pontos_lado_a')::integer,
       (v_batalha->>'pontos_lado_b')::integer,
+      (v_batalha->>'pontos_lado_c')::integer,
       (v_batalha->>'vitoria_2_0')::boolean,
       COALESCE((v_batalha->>'double_tri')::boolean, FALSE)
     )
@@ -507,7 +538,7 @@ BEGIN
 
   -- 10. CONFIRMAR QUE EXISTEM PONTOS
 
-  IF v_total = 0 THEN
+  IF v_total = 0 AND EXISTS (SELECT 1 FROM public.batalhas WHERE edicao_id = p_edicao_id AND fase <> 'PRÉ-FASE') THEN
 
     RAISE EXCEPTION
       'Não existem pontuações válidas';
