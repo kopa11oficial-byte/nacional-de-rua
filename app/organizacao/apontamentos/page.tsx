@@ -851,16 +851,21 @@ export default function ApontamentosPage() {
                   </div>
 
                   {batalha.participantesIndividuais ? (
-                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                       {batalha.participantesIndividuais.map((nome, indice) => (
-                        <div key={nome} className="border border-[#d6b56d]/40 p-4 text-center">
-                          <p className="break-words text-lg font-black uppercase">{nome}</p>
-                          <span className={`${boldIMIP.className} mt-3 inline-flex min-w-16 justify-center bg-[#d6b56d] px-4 py-2 text-3xl font-bold text-[#101713]`}>
-                            {batalha.resultadosIndividuais?.[indice] ?? 0}
-                          </span>
-                          <p className="mt-2 text-xs font-black text-[#d6b56d]">
-                            {batalha.vencedores.includes(nome) ? "VENCEDOR" : "PARTICIPANTE"}
-                          </p>
+                        <div key={nome} className="flex items-center gap-3">
+                          {indice > 0 && (
+                            <span className="text-xs font-black text-[#d6b56d]">VS</span>
+                          )}
+                          <div className="min-w-24 border border-[#d6b56d]/40 p-4 text-center sm:min-w-36">
+                            <p className="break-words text-lg font-black uppercase">{nome}</p>
+                            <span className={`${boldIMIP.className} mt-3 inline-flex min-w-16 justify-center bg-[#d6b56d] px-4 py-2 text-3xl font-bold text-[#101713]`}>
+                              {batalha.resultadosIndividuais?.[indice] ?? 0}
+                            </span>
+                            <p className="mt-2 text-xs font-black text-[#d6b56d]">
+                              {batalha.vencedores.includes(nome) ? "VENCEDOR" : "PARTICIPANTE"}
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
