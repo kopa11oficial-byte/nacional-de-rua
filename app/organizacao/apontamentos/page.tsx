@@ -500,7 +500,12 @@ export default function ApontamentosPage() {
           ),
         );
 
-        const participacoes = [
+        const participacoes = batalha.participantesIndividuais
+          ? batalha.participantesIndividuais.map((nome, indice) => ({
+              nome,
+              lado: ["A", "B", "C"][indice],
+            }))
+          : [
           ...batalha.equipa1.map((nome) => ({
             nome,
             lado: "A",
@@ -509,7 +514,9 @@ export default function ApontamentosPage() {
             nome,
             lado: "B",
           })),
-        ].map(({ nome, lado }) => {
+        ];
+
+        const participacoesResolvidas = participacoes.map(({ nome, lado }) => {
           const mc = mcsPorNomeAtualizado.get(
             normalizarTexto(nome),
           );
@@ -552,8 +559,9 @@ export default function ApontamentosPage() {
           pontos_lado_a: batalha.pontosEquipa1,
           pontos_lado_b: batalha.pontosEquipa2,
           vitoria_2_0: batalha.bonusDoisZero,
-          participacoes,
+          participacoes: participacoesResolvidas,
           pontuacoes,
+          double_tri: Boolean(batalha.participantesIndividuais),
         };
       });
 
@@ -838,6 +846,18 @@ export default function ApontamentosPage() {
                     </span>
                   </div>
 
+                  {batalha.participantesIndividuais ? (
+                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                      {batalha.participantesIndividuais.map((nome) => (
+                        <div key={nome} className="border border-[#d6b56d]/40 p-4 text-center">
+                          <p className="break-words text-lg font-black uppercase">{nome}</p>
+                          <p className="mt-2 text-xs font-black text-[#d6b56d]">
+                            {batalha.vencedores.includes(nome) ? "VENCEDOR" : "PARTICIPANTE"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
                   <div className="mt-6 grid items-center gap-5 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
                     <div className="min-w-0 text-center sm:text-right">
                       <p className="break-words text-lg font-black uppercase">
@@ -867,6 +887,8 @@ export default function ApontamentosPage() {
                       </span>
                     </div>
                   </div>
+
+                  )}
 
                   <div className="mt-6 border-t border-[#d6b56d]/25 pt-5">
                     <p className="text-sm text-[#d2d9d0]">
