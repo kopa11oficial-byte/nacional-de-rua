@@ -104,6 +104,46 @@ begin
 end;
 $$;
 
+
+-- Proteção anti-abuso válida também para inserts diretos pela API.
+create or replace function public.limitar_frequencia_comunicacao_imip()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $
+declare
+  v_total int;
+begin
+  if TG_TABLE_NAME = 'propostas_imip' then
+    select count(*) into v_total
+      from public.propostas_imip p
+     where p.proponente_id = new.proponente_id
+       and p.criado_em > now() - interval '1 minute';
+    if v_total >= 1 then
+      raise exception 'Aguarda um minuto antes de abrir outra proposta.';
+    end if;
+  elsif TG_TABLE_NAME = 'mensagens_propostas_imip' then
+    select count(*) into v_total
+      from public.mensagens_propostas_imip m
+     where m.autor_id = new.autor_id
+       and m.criado_em > now() - interval '1 minute';
+    if v_total >= 6 then
+      raise exception 'Limite de mensagens atingido. Aguarda um minuto.';
+    end if;
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists trg_limitar_propostas_imip on public.propostas_imip;
+create trigger trg_limitar_propostas_imip
+before insert on public.propostas_imip
+for each row execute function public.limitar_frequencia_comunicacao_imip();
+
+drop trigger if exists trg_limitar_mensagens_imip on public.mensagens_propostas_imip;
+create trigger trg_limitar_mensagens_imip
+before insert on public.mensagens_propostas_imip
+for each row execute function public.limitar_frequencia_comunicacao_imip();
+
 -- Ao chegar uma mensagem, notificar no site os quatro suportes existentes
 -- e o Suporte Geral, sem multiplicar a conversa.
 create or replace function public.notificar_mensagem_imip()
@@ -268,6 +308,7 @@ revoke all on function public.abrir_proposta_imip(text,text,text,text) from publ
 revoke all on function public.atribuir_suporte_regional_imip(text,text) from public, anon;
 revoke all on function public.desativar_suporte_regional_imip(uuid) from public, anon;
 revoke all on function public.notificar_mensagem_imip() from public, anon, authenticated;
+revoke all on function public.limitar_frequencia_comunicacao_imip() from public, anon, authenticated;
 grant execute on function public.tem_acesso_central_imip() to authenticated;
 grant execute on function public.abrir_proposta_imip(text,text,text,text) to authenticated;
 grant execute on function public.atribuir_suporte_regional_imip(text,text) to authenticated;
