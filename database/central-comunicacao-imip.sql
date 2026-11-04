@@ -109,7 +109,7 @@ $$;
 create or replace function public.limitar_frequencia_comunicacao_imip()
 returns trigger
 language plpgsql security definer set search_path = ''
-as $
+as $$
 declare
   v_total int;
 begin
@@ -132,7 +132,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists trg_limitar_propostas_imip on public.propostas_imip;
 create trigger trg_limitar_propostas_imip
