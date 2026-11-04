@@ -599,6 +599,15 @@ export function processarNormal(
       continue;
     }
 
+    // Um confronto com dois "vs" não pode voltar ao leitor 1x1
+    // quando o Double Tri é inválido (por exemplo, empate no topo).
+    if ((linha.match(/\bvs\.?\b/gi) ?? []).length >= 2) {
+      linhasIgnoradas.push(
+        `Linha ${indice + 1}: ${linha} — Double Tri inválido; é obrigatório um vencedor único`,
+      );
+      continue;
+    }
+
     const resultado = interpretarBatalha(linha);
 
     if (!resultado) {
