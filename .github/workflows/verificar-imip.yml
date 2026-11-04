@@ -35,5 +35,7 @@ jobs:
         run: node scripts/testar-chaves-normal.cjs
       - name: Testar Double Tri e pré-fase
         run: node scripts/testar-double-tri.cjs
+      - name: Testar histórico de MCs sem pontos
+        run: node scripts/testar-historico-mcs.cjs
       - name: Compilar Next.js
         run: npm run build
