@@ -25,12 +25,6 @@ import {
   ==================================================
 */
 
-const whatsappParcerias =
-  "https://wa.me/351961901107?text=" +
-  encodeURIComponent(
-    "Olá! Gostaria de apresentar uma proposta de apoio ou patrocínio ao IMIP — Nacional de Rua.",
-  );
-
 const modalidades = [
   {
     numero: "01",
@@ -184,14 +178,12 @@ export default function ApoiosPatrociniosPage() {
                   a crescer.
                 </p>
 
-                <a
-                  href={whatsappParcerias}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/propostas"
                   className="mt-8 inline-flex min-h-12 items-center justify-center bg-[#d6b56d] px-6 py-3 text-center text-xs font-black uppercase tracking-[0.06em] text-[#101713] transition hover:bg-[#f0d58e]"
                 >
-                  APRESENTAR PROPOSTA ↗
-                </a>
+                  APRESENTAR PROPOSTA NO SITE ↗
+                </Link>
               </div>
             </div>
 
@@ -668,21 +660,20 @@ export default function ApoiosPatrociniosPage() {
               <p className="mt-3 max-w-xl text-sm font-bold leading-relaxed">
                 Conta-nos quem és, de que forma
                 gostarias de apoiar e qual o alcance
-                da colaboração que propões.
+                da colaboração que propões. Toda a conversa
+                ficará disponível no próprio site.
               </p>
 
-              <a
-                href={whatsappParcerias}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/propostas"
                 className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-3 bg-[#101713] px-6 py-3 text-center text-xs font-black uppercase tracking-[0.06em] text-[#f0e6d1] transition hover:bg-[#087a43] sm:w-auto"
               >
-                CONTACTAR SUPORTE GERAL
+                ENVIAR PROPOSTA NO IMIP
 
                 <span aria-hidden="true">
                   ↗
                 </span>
-              </a>
+              </Link>
 
               <a
                 href="mailto:imip.nacional@gmail.com?subject=Proposta%20de%20parceria%20IMIP"
