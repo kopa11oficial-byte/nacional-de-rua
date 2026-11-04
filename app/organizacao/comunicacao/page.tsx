@@ -192,7 +192,7 @@ export default function CentralComunicacaoImip() {
                     </select>
                   </label>
                 </div>
-                <ConversaImip proposta={ativa} userId={userId} suporte onAtividade={() => void carregar(userId, administrador)} />
+                <ConversaImip key={ativa.id} proposta={ativa} userId={userId} suporte onAtividade={() => void carregar(userId, administrador)} />
               </> : <div className="border border-white/20 bg-black/50 p-6 text-sm text-zinc-300">Escolhe uma proposta para consultar o histórico, responder ou acrescentar uma nota interna.</div>}
             </div>
           </div>
