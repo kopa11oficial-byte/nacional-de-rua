@@ -145,6 +145,7 @@ export default function SuportePage() {
   const [aCarregar, setACarregar] = useState(true);
   const [temAcesso, setTemAcesso] = useState(false);
   const [suporteGeral, setSuporteGeral] = useState(false);
+  const [acessoComunicacao, setAcessoComunicacao] = useState(false);
 
   const [permissoes, setPermissoes] =
     useState<Permissoes>(permissoesVazias);
@@ -166,6 +167,7 @@ export default function SuportePage() {
       setAviso("");
       setTemAcesso(false);
       setSuporteGeral(false);
+      setAcessoComunicacao(false);
       setPermissoes(permissoesVazias);
 
       try {
@@ -213,6 +215,7 @@ export default function SuportePage() {
           };
 
           setPermissoes(todasPermissoes);
+          setAcessoComunicacao(true);
           setTemAcesso(true);
 
           // Manter as contagens do painel geral.
@@ -296,9 +299,16 @@ export default function SuportePage() {
             resposta.autorizado;
         }
 
+        // O novo suporte regional tem acesso à comunicação sem
+        // receber permissões automáticas nas antigas ferramentas.
+        const { data: acessoMensagens, error: erroMensagens } =
+          await supabase.rpc("tem_acesso_central_imip");
+
         const autorizado = Object.values(
           permissoesUtilizador,
-        ).some(Boolean);
+        ).some(Boolean) || (!erroMensagens && acessoMensagens === true);
+
+        setAcessoComunicacao(!erroMensagens && acessoMensagens === true);
 
         if (!autorizado) {
           throw new Error(
@@ -418,15 +428,24 @@ export default function SuportePage() {
               </p>
             )}
 
+            {acessoComunicacao && (
+              <section className="mt-8 border border-[#e8c76c]/50 bg-[#142319] p-5 sm:p-7">
+                <p className="text-xs font-black tracking-[0.2em] text-[#e8c76c]">CENTRAL DE COMUNICAÇÃO IMIP</p>
+                <h2 className="mt-3 text-2xl font-black">PROPOSTAS E MENSAGENS</h2>
+                <p className="mt-3 text-sm text-zinc-300">Caixa de entrada comum aos quatro suportes regionais e ao Suporte Geral, com respostas, acompanhamento e notas internas.</p>
+                <Link href="/organizacao/comunicacao" className="mt-5 inline-flex min-h-11 items-center bg-[#e8c76c] px-5 py-3 text-xs font-black uppercase text-[#101713]">ABRIR CAIXA DE ENTRADA ↗</Link>
+              </section>
+            )}
+
             <section className="mt-10">
               <p className="text-xs font-black tracking-[0.2em] text-[#e8c76c]">
-                ESTRUTURA NACIONAL
+                FERRAMENTAS FUNCIONAIS EXISTENTES
               </p>
 
               <h2 className="mt-3 text-2xl font-black">
                 {suporteGeral
-                  ? "ÁREAS DE SUPORTE"
-                  : "A TUA ÁREA DE SUPORTE"}
+                  ? "ÁREAS FUNCIONAIS"
+                  : "AS TUAS PERMISSÕES FUNCIONAIS"}
               </h2>
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
