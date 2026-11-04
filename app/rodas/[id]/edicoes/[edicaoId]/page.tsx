@@ -21,6 +21,7 @@ type Batalha = {
   numero: number;
   pontos_lado_a: number;
   pontos_lado_b: number;
+  pontos_lado_c: number | null;
   vitoria_2_0: boolean;
   double_tri: boolean;
 };
@@ -108,7 +109,7 @@ export default function ResultadosEdicaoPage() {
               supabase
                 .from("batalhas")
                 .select(
-                  "id,fase,numero,pontos_lado_a,pontos_lado_b,vitoria_2_0,double_tri",
+                  "id,fase,numero,pontos_lado_a,pontos_lado_b,pontos_lado_c,vitoria_2_0,double_tri",
                 )
                 .eq("edicao_id", edicaoId)
                 .order("numero")
@@ -397,7 +398,14 @@ export default function ResultadosEdicaoPage() {
                           <div className="mt-3">
                             <p className="text-xs font-black text-yellow-500">DOUBLE TRI · 3 MCs · 1 VENCEDOR</p>
                             <p className="mt-2 break-words font-bold text-white">
-                              {participantesDoubleTri.map((item) => item.nome).join(" VS ")}
+                              {participantesDoubleTri.map((item) => {
+                                const placares: Record<string, number | null> = {
+                                  A: batalha.pontos_lado_a,
+                                  B: batalha.pontos_lado_b,
+                                  C: batalha.pontos_lado_c,
+                                };
+                                return `${item.nome} ${placares[item.lado] ?? 0}`;
+                              }).join(" vs ")}
                             </p>
                             <p className="mt-2 font-black text-yellow-500">
                               VENCEDOR: {participantesDoubleTri.find((item) => item.venceu)?.nome ?? "Por confirmar"}
