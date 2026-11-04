@@ -43,6 +43,7 @@ type CamposPerfil = {
 
 type PersonalizacaoEditavel = {
   lema: string;
+  capa_url: string;
   cor_destaque: string;
   cor_fundo: string;
   cor_lema: string;
@@ -50,6 +51,7 @@ type PersonalizacaoEditavel = {
 
 const personalizacaoInicial: PersonalizacaoEditavel = {
   lema: "",
+  capa_url: "",
   cor_destaque: "#d6b56d",
   cor_fundo: "#091b13",
   cor_lema: "#ffffff",
@@ -97,6 +99,13 @@ export default function EditarPerfilMCPage() {
     useState(false);
 
   const inputFotoRef = useRef<HTMLInputElement>(null);
+
+  // Fotografia horizontal de capa (independente da foto principal).
+  const [ficheiroCapa, setFicheiroCapa] = useState<File | null>(null);
+  const [capaLocal, setCapaLocal] = useState("");
+  const [capaRemovida, setCapaRemovida] = useState(false);
+  const [erroCapaPreview, setErroCapaPreview] = useState(false);
+  const inputCapaRef = useRef<HTMLInputElement>(null);
 
   const [userId, setUserId] = useState("");
   const [aCarregar, setACarregar] = useState(true);
@@ -198,9 +207,13 @@ export default function EditarPerfilMCPage() {
       x_url: perfil.x_url ?? "",
     });
 
-    // Personalização visual existente.
-    // Não alterar capa, fundo fotográfico
-    // nem ordem das secções.
+    // Personalização visual existente. A capa pode ser editada;
+    // não alterar o fundo fotográfico nem a ordem das secções.
+
+    setFicheiroCapa(null);
+    setCapaRemovida(false);
+    setErroCapaPreview(false);
+    if (inputCapaRef.current) inputCapaRef.current.value = "";
 
     setACarregarPersonalizacao(true);
     setPersonalizacaoDisponivel(false);
@@ -213,7 +226,7 @@ export default function EditarPerfilMCPage() {
     } = await supabase
       .from("mc_personalizacao")
       .select(
-        "mc_id,lema,cor_destaque,cor_fundo,cor_lema",
+        "mc_id,lema,capa_url,cor_destaque,cor_fundo,cor_lema",
       )
       .eq("mc_id", id)
       .maybeSingle();
@@ -228,6 +241,7 @@ export default function EditarPerfilMCPage() {
 
       setPersonalizacao({
         lema: aparencia?.lema ?? "",
+        capa_url: aparencia?.capa_url ?? "",
         cor_destaque:
           aparencia?.cor_destaque ?? "#d6b56d",
         cor_fundo:
@@ -304,6 +318,17 @@ export default function EditarPerfilMCPage() {
     };
   }, [ficheiroFoto]);
 
+  useEffect(() => {
+    if (!ficheiroCapa) {
+      setCapaLocal("");
+      return;
+    }
+
+    const urlLocal = URL.createObjectURL(ficheiroCapa);
+    setCapaLocal(urlLocal);
+    return () => URL.revokeObjectURL(urlLocal);
+  }, [ficheiroCapa]);
+
   function atualizarCampo(
     campo: keyof CamposPerfil,
     valor: string,
@@ -373,6 +398,42 @@ export default function EditarPerfilMCPage() {
     if (inputFotoRef.current) {
       inputFotoRef.current.value = "";
     }
+  }
+
+  // ==========================================
+  // ESCOLHER OU REMOVER FOTOGRAFIA DE CAPA
+  // ==========================================
+
+  function selecionarCapa(evento: ChangeEvent<HTMLInputElement>) {
+    const ficheiro = evento.currentTarget.files?.[0];
+    if (!ficheiro) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(ficheiro.type)) {
+      setErroPersonalizacao("Escolhe uma imagem de capa JPG, PNG ou WebP.");
+      evento.currentTarget.value = "";
+      return;
+    }
+
+    if (ficheiro.size > 5 * 1024 * 1024) {
+      setErroPersonalizacao("A imagem de capa não pode ultrapassar 5 MB.");
+      evento.currentTarget.value = "";
+      return;
+    }
+
+    setErroPersonalizacao("");
+    setMensagemPersonalizacao("");
+    setErroCapaPreview(false);
+    setCapaRemovida(false);
+    setFicheiroCapa(ficheiro);
+  }
+
+  function removerCapa() {
+    setFicheiroCapa(null);
+    setCapaRemovida(true);
+    setErroCapaPreview(false);
+    setErroPersonalizacao("");
+    setMensagemPersonalizacao("");
+    if (inputCapaRef.current) inputCapaRef.current.value = "";
   }
 
   // ==========================================
@@ -786,10 +847,12 @@ export default function EditarPerfilMCPage() {
     setFicheiroFoto(null);
     setFotoRemovida(false);
     setErroFotoPreview(false);
+    setFicheiroCapa(null);
+    setCapaRemovida(false);
+    setErroCapaPreview(false);
 
-    if (inputFotoRef.current) {
-      inputFotoRef.current.value = "";
-    }
+    if (inputFotoRef.current) inputFotoRef.current.value = "";
+    if (inputCapaRef.current) inputCapaRef.current.value = "";
 
     setPersonalizacao(
       personalizacaoInicial,
