@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     });
 
     const { data: eAdministrador, error: erroAdmin } =
-      await clienteComSessao.rpc("e_administrador");
+      await clienteComSessao.rpc("tem_permissao_suporte", { p_area: "mcs_participacao" });
 
     if (erroAdmin || eAdministrador !== true) {
       return falhar(403, "Só o Suporte Geral pode emitir esta ligação.");
