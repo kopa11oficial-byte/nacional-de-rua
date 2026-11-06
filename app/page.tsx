@@ -2,7 +2,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { boldIMIP, veneerIMIP } from "./fonts/identidade";
 import { supabase } from "../lib/supabase";
@@ -570,7 +569,7 @@ export default function Home() {
 
           {/* LOGÓTIPO OFICIAL COMPLETO */}
 
-          <Link
+          <a
             href="/"
             aria-label="Nacional de Rua — página inicial"
             className="flex min-w-0 items-center gap-3"
@@ -601,7 +600,7 @@ export default function Home() {
                 IMIP · IMPROVISO MADE IN PORTUGAL
               </span>
             </span>
-          </Link>
+          </a>
 
           {/* MENU DESKTOP */}
 
@@ -609,74 +608,93 @@ export default function Home() {
             aria-label="Navegação principal"
             className="hidden items-center gap-4 xl:flex"
           >
-            <Link
+            <a
               href="/ranking"
               className="text-xs font-extrabold uppercase hover:text-[#e0bf71]"
             >
               Ranking
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/rodas"
               className="text-xs font-extrabold uppercase hover:text-[#e0bf71]"
             >
               Rodas
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/mcs"
               className="text-xs font-extrabold uppercase hover:text-[#e0bf71]"
             >
               MCs
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/final-nacional"
               className="text-xs font-extrabold uppercase hover:text-[#e0bf71]"
             >
               Final Nacional
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/jurados"
               className="text-xs font-extrabold uppercase hover:text-[#e0bf71]"
             >
               Arbitragem
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/apoios-e-patrocinios"
               aria-label="Apoios e Patrocínios"
               className="text-xs font-extrabold uppercase hover:text-[#e0bf71]"
             >
               Apoios
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/organizacao/login"
               className="border border-[#d4ad61]/65 px-4 py-3 text-xs font-black uppercase text-[#e0bf71] hover:bg-[#d4ad61] hover:text-black"
             >
               Organização ↗
-            </Link>
+            </a>
           </nav>
 
           {/* NAVEGAÇÃO COMPACTA */}
 
           <div className="flex shrink-0 items-center gap-2 xl:hidden">
-            <Link
-              href="/apoios-e-patrocinios"
-              aria-label="Apoios e Patrocínios"
-              className="border border-[#d4ad61]/40 px-2 py-2 text-[10px] font-black uppercase text-[#e0bf71] hover:bg-[#1e2c23] sm:px-3"
-            >
-              Apoios
-            </Link>
-
-            <Link
+            {/* Menu nativo: também funciona sem JavaScript no telemóvel. */}
+            <details className="group relative">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center gap-1 border border-[#d4ad61]/65 px-3 py-2 text-xs font-black uppercase text-[#e0bf71] [&::-webkit-details-marker]:hidden">
+                Menu <span aria-hidden="true" className="transition-transform group-open:rotate-180">▾</span>
+              </summary>
+              <nav
+                aria-label="Navegação móvel"
+                className="absolute right-0 top-full z-50 mt-2 w-[min(86vw,17rem)] border border-[#d4ad61] bg-[#090d0b] p-2 shadow-2xl"
+              >
+                {[
+                  { href: "/ranking", nome: "Ranking" },
+                  { href: "/rodas", nome: "Rodas" },
+                  { href: "/mcs", nome: "MCs" },
+                  { href: "/final-nacional", nome: "Final Nacional" },
+                  { href: "/jurados", nome: "Arbitragem" },
+                  { href: "/apoios-e-patrocinios", nome: "Apoios" },
+                ].map(({ href, nome }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className="flex min-h-11 items-center border-b border-white/15 px-4 py-3 text-sm font-bold uppercase text-[#f0e6d1] last:border-0 active:bg-[#1e2c23] focus-visible:bg-[#1e2c23]"
+                  >
+                    {nome}
+                  </a>
+                ))}
+              </nav>
+            </details>
+            <a
               href="/organizacao/login"
-              className="border border-[#d4ad61]/65 px-2 py-2 text-[10px] font-black uppercase text-[#e0bf71] sm:px-3"
+              className="flex min-h-12 items-center border border-[#d4ad61]/65 px-3 py-2 text-xs font-black uppercase text-[#e0bf71]"
             >
               Entrar ↗
-            </Link>
+            </a>
           </div>
         </div>
       </header>
@@ -762,19 +780,19 @@ export default function Home() {
 
             <div className="mt-9 flex flex-wrap gap-3">
 
-              <Link
+              <a
                 href="/rodas"
                 className="inline-flex min-h-12 items-center bg-[#dfb95e] px-5 py-3 text-xs font-black uppercase tracking-wide text-[#10110d] transition hover:bg-[#ffe194]"
               >
                 CONHECER AS RODAS ↗
-              </Link>
+              </a>
 
-              <Link
+              <a
                 href="/ranking"
                 className="inline-flex min-h-12 items-center border-2 border-[#dfb95e] bg-black/65 px-5 py-3 text-xs font-black uppercase tracking-wide text-white transition hover:bg-[#1e2c23]"
               >
                 VER O RANKING ↗
-              </Link>
+              </a>
             </div>
           </div>
 
@@ -864,7 +882,7 @@ export default function Home() {
               numero: "04",
             },
           ].map((link) => (
-            <Link
+            <a
               key={link.href}
               href={link.href}
               className="group flex min-h-[110px] items-center gap-3 border-b border-r border-black/15 px-4 py-5 transition hover:bg-[#d0bea0] sm:px-7"
@@ -894,7 +912,7 @@ export default function Home() {
               >
                 ↗
               </span>
-            </Link>
+            </a>
           ))}
         </div>
       </nav>
@@ -963,7 +981,7 @@ export default function Home() {
                 <div className="mt-5">
 
                   {linhas.map((mc, indice) => (
-                    <Link
+                    <a
                       href={`/mcs/${mc.id}`}
                       key={mc.id}
                       className="group grid grid-cols-[2.7rem_minmax(0,1fr)_4.5rem] items-center gap-3 border-t border-[#b2a884]/25 py-3.5 sm:grid-cols-[3.2rem_minmax(0,1fr)_5.5rem_4.5rem]"
@@ -989,7 +1007,7 @@ export default function Home() {
                       <span className="hidden text-right text-xs text-zinc-400 sm:block">
                         {mc.vitorias20} × 2–0
                       </span>
-                    </Link>
+                    </a>
                   ))}
                 </div>
               )}
@@ -1000,12 +1018,12 @@ export default function Home() {
                   : "Classificação da época oficial, separada dos testes de 2026."}
               </div>
 
-              <Link
+              <a
                 href="/ranking"
                 className="mt-6 inline-flex min-h-11 items-center border border-[#e1bd6d] px-5 py-3 text-xs font-black uppercase text-[#e1bd6d] hover:bg-[#e1bd6d] hover:text-black"
               >
                 CONSULTAR O RANKING ↗
-              </Link>
+              </a>
             </div>
 
             {/* =====================================
@@ -1020,7 +1038,7 @@ export default function Home() {
 
               {/* CARTÃO 1 — RODAS */}
 
-              <Link
+              <a
                 href="/rodas"
                 className="group relative flex min-h-[215px] items-end overflow-hidden border border-[#e1bd6d]/50 bg-[#080b09]"
               >
@@ -1050,11 +1068,11 @@ export default function Home() {
                     EXPLORAR RODAS ↗
                   </p>
                 </div>
-              </Link>
+              </a>
 
               {/* CARTÃO 2 — MCs */}
 
-              <Link
+              <a
                 href="/mcs"
                 className="group relative flex min-h-[215px] items-end overflow-hidden border border-[#e1bd6d]/50 bg-[#080b09]"
               >
@@ -1084,7 +1102,7 @@ export default function Home() {
                     VER PERFIS ↗
                   </p>
                 </div>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -1130,12 +1148,12 @@ export default function Home() {
               uma página à nossa história.
             </p>
 
-            <Link
+            <a
               href="/rodas"
               className="mt-7 inline-flex min-h-12 items-center border-2 border-[#1c241e] px-5 py-3 text-xs font-black uppercase hover:bg-[#1c241e] hover:text-white"
             >
               CONHECER O MOVIMENTO ↗
-            </Link>
+            </a>
           </div>
 
           {/* FOTOGRAFIAS DA COMUNIDADE */}
@@ -1207,33 +1225,33 @@ export default function Home() {
 
           <div className="flex flex-wrap gap-x-5 gap-y-3 text-xs font-black uppercase text-[#e1bd6d]">
 
-            <Link
+            <a
               href="/jurados"
               className="hover:underline"
             >
               MANUAL DE ARBITRAGEM
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/final-nacional"
               className="hover:underline"
             >
               FINAL NACIONAL
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/apoios-e-patrocinios"
               className="hover:underline"
             >
               APOIOS E PATROCÍNIOS
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/organizacao/login"
               className="hover:underline"
             >
               ORGANIZAÇÃO
-            </Link>
+            </a>
           </div>
 
           <div
