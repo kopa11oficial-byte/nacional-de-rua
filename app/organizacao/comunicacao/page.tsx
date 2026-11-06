@@ -37,6 +37,10 @@ export default function CentralComunicacaoImip() {
   const [aAtribuir, setAAtribuir] = useState(false);
   const [erroAtribuicao, setErroAtribuicao] = useState("");
   const [sucessoAtribuicao, setSucessoAtribuicao] = useState("");
+  const [aConvidar, setAConvidar] = useState(false);
+  const [erroConvite, setErroConvite] = useState("");
+  const [ligacaoConvite, setLigacaoConvite] = useState("");
+  const [conviteCopiado, setConviteCopiado] = useState(false);
 
   const carregar = useCallback(async (uid: string, geral: boolean) => {
     const [respostaPropostas, respostaNotificacoes] = await Promise.all([
@@ -128,6 +132,69 @@ export default function CentralComunicacaoImip() {
       setErroAtribuicao("Não foi possível comunicar com o serviço. Tenta novamente.");
     } finally {
       setAAtribuir(false);
+    }
+  }
+
+  async function convidar() {
+    if (aConvidar || aAtribuir) return;
+    setErroConvite("");
+    setLigacaoConvite("");
+    setConviteCopiado(false);
+
+    const email = emailMembro.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+      setErroConvite("Indica um email válido antes de gerar o convite.");
+      return;
+    }
+
+    setAConvidar(true);
+    try {
+      const { data: sessao, error: erroSessao } =
+        await supabase.auth.getSession();
+      const token = sessao.session?.access_token;
+      if (erroSessao || !token) {
+        throw new Error("A sessão expirou. Entra novamente como Suporte Geral.");
+      }
+
+      const resposta = await fetch("/organizacao/comunicacao/convidar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email, regiao: regiaoMembro }),
+      });
+      const dados = (await resposta.json()) as {
+        sucesso?: boolean;
+        ligacao?: string;
+        erro?: string;
+      };
+      if (!resposta.ok || !dados.sucesso || !dados.ligacao) {
+        throw new Error(dados.erro ?? "Não foi possível gerar o convite.");
+      }
+
+      setLigacaoConvite(dados.ligacao);
+      setSucessoAtribuicao("");
+      setErroAtribuicao("");
+    } catch (falha) {
+      setErroConvite(
+        falha instanceof Error
+          ? falha.message
+          : "Não foi possível criar o convite.",
+      );
+    } finally {
+      setAConvidar(false);
+    }
+  }
+
+  async function copiarConvite() {
+    if (!ligacaoConvite) return;
+    try {
+      await navigator.clipboard.writeText(ligacaoConvite);
+      setConviteCopiado(true);
+      setErroConvite("");
+    } catch {
+      setErroConvite("Não foi possível copiar automaticamente. Seleciona a ligação abaixo e copia-a.");
     }
   }
 
@@ -237,7 +304,7 @@ export default function CentralComunicacaoImip() {
                   required
                   placeholder="email@exemplo.pt"
                   value={emailMembro}
-                  onChange={e => { setEmailMembro(e.target.value); setErroAtribuicao(""); }}
+                  onChange={e => { setEmailMembro(e.target.value); setErroAtribuicao(""); setLigacaoConvite(""); setErroConvite(""); }}
                   className="mt-2 min-h-12 w-full min-w-0 rounded-md border border-white/25 bg-black px-3 py-3 text-base text-white outline-none focus:border-[#d6b56d]"
                 />
               </label>
@@ -246,7 +313,7 @@ export default function CentralComunicacaoImip() {
                 <select
                   id="regiao-responsavel-regional"
                   value={regiaoMembro}
-                  onChange={e => setRegiaoMembro(e.target.value as RegiaoImip)}
+                  onChange={e => { setRegiaoMembro(e.target.value as RegiaoImip); setLigacaoConvite(""); setErroConvite(""); }}
                   className="mt-2 min-h-12 w-full min-w-0 rounded-md border border-white/25 bg-black px-3 py-3 text-base text-white outline-none focus:border-[#d6b56d]"
                 >
                   {REGIOES_IMIP.map(r => <option key={r.id} value={r.id}>Suporte {r.nome}</option>)}
@@ -256,6 +323,52 @@ export default function CentralComunicacaoImip() {
                 {aAtribuir ? "A ATRIBUIR..." : "ATRIBUIR SUPORTE"}
               </button>
             </form>
+            <div className="mt-5 border-t border-[#d6b56d]/25 pt-5">
+              <p className="text-sm font-black uppercase tracking-wide text-[#d6b56d]">
+                O responsável ainda não tem conta IMIP?
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-300">
+                Gera um convite de confirmação para o email e região indicados acima. O convite não concede permissões: só depois de ativar a conta poderás carregar em ATRIBUIR SUPORTE.
+              </p>
+              <button
+                type="button"
+                disabled={aConvidar || aAtribuir || !emailMembro.trim()}
+                onClick={() => void convidar()}
+                className="mt-4 min-h-12 w-full rounded-md border-2 border-[#d6b56d] bg-black px-5 py-3 text-sm font-black uppercase text-[#e8c76c] disabled:opacity-50 sm:w-auto"
+              >
+                {aConvidar ? "A GERAR CONVITE..." : "GERAR CONVITE PARA NOVA CONTA"}
+              </button>
+              {erroConvite && (
+                <p role="alert" className="mt-3 border-l-4 border-red-500 bg-red-950/40 p-4 text-sm text-red-100">
+                  {erroConvite}
+                </p>
+              )}
+              {ligacaoConvite && (
+                <div className="mt-4 space-y-3 rounded-md border border-[#d6b56d]/50 bg-black/70 p-4" role="status">
+                  <p className="text-sm font-black text-[#e8c76c]">
+                    Convite gerado para {emailMembro.trim()}
+                  </p>
+                  <p className="text-sm leading-relaxed text-zinc-200">
+                    Copia a ligação e envia-a <strong>em privado para o email indicado</strong>. Não a publiques em grupos. Depois da pessoa confirmar o email e definir a palavra-passe, volta a este formulário para atribuir a região.
+                  </p>
+                  <input
+                    type="text"
+                    readOnly
+                    aria-label="Ligação de convite privada"
+                    value={ligacaoConvite}
+                    onFocus={e => e.currentTarget.select()}
+                    className="min-h-12 w-full min-w-0 rounded-md border border-white/25 bg-[#101713] px-3 text-base text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void copiarConvite()}
+                    className="min-h-12 w-full rounded-md bg-[#d6b56d] px-5 py-3 text-sm font-black uppercase text-black sm:w-auto"
+                  >
+                    {conviteCopiado ? "LIGAÇÃO COPIADA" : "COPIAR LIGAÇÃO"}
+                  </button>
+                </div>
+              )}
+            </div>
             {erroAtribuicao && (
               <p role="alert" className="mt-4 border-l-4 border-red-500 bg-red-950/40 p-4 text-sm leading-relaxed text-red-100">
                 {erroAtribuicao}
