@@ -35,6 +35,8 @@ export default function CentralComunicacaoImip() {
   const [emailMembro, setEmailMembro] = useState("");
   const [regiaoMembro, setRegiaoMembro] = useState<RegiaoImip>("norte");
   const [aAtribuir, setAAtribuir] = useState(false);
+  const [erroAtribuicao, setErroAtribuicao] = useState("");
+  const [sucessoAtribuicao, setSucessoAtribuicao] = useState("");
 
   const carregar = useCallback(async (uid: string, geral: boolean) => {
     const [respostaPropostas, respostaNotificacoes] = await Promise.all([
@@ -96,13 +98,37 @@ export default function CentralComunicacaoImip() {
 
   async function atribuir(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setAAtribuir(true); setErro(""); setAviso("");
-    const { error } = await supabase.rpc("atribuir_suporte_regional_imip", {
-      p_email: emailMembro.trim(), p_regiao: regiaoMembro,
-    });
-    if (error) setErro("Não foi possível atribuir o suporte: " + error.message);
-    else { setAviso("Responsável regional ativado."); setEmailMembro(""); await carregar(userId, administrador); }
-    setAAtribuir(false);
+    if (aAtribuir) return;
+
+    setAAtribuir(true);
+    setErroAtribuicao("");
+    setSucessoAtribuicao("");
+
+    try {
+      const { error } = await supabase.rpc("atribuir_suporte_regional_imip", {
+        p_email: emailMembro.trim(),
+        p_regiao: regiaoMembro,
+      });
+
+      if (error) {
+        const faltaConta = error.message.includes(
+          "A conta não existe ou ainda não confirmou o email",
+        );
+        setErroAtribuicao(
+          faltaConta
+            ? "Este email ainda não pertence a uma conta IMIP confirmada. É necessário criar e confirmar a conta antes de lhe atribuir funções de suporte. Nenhuma permissão foi concedida."
+            : "Não foi possível atribuir o suporte: " + error.message,
+        );
+      } else {
+        setSucessoAtribuicao("Responsável regional ativado com sucesso.");
+        setEmailMembro("");
+        await carregar(userId, administrador);
+      }
+    } catch {
+      setErroAtribuicao("Não foi possível comunicar com o serviço. Tenta novamente.");
+    } finally {
+      setAAtribuir(false);
+    }
   }
 
   async function desativar(id: string) {
@@ -199,14 +225,47 @@ export default function CentralComunicacaoImip() {
           {administrador && <section className="mt-9 border border-[#d6b56d]/40 bg-[#0e1a12] p-5 sm:p-7">
             <p className="text-xs font-black tracking-widest text-[#d6b56d]">SÓ SUPORTE GERAL</p>
             <h2 className="mt-2 text-xl font-black">ATRIBUIR RESPONSÁVEIS REGIONAIS</h2>
-            <p className="mt-2 text-sm text-zinc-300">O colaborador precisa de uma conta IMIP com email confirmado. Atribuir um suporte não altera os acessos funcionais anteriores.</p>
-            <form onSubmit={atribuir} className="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-              <input type="email" aria-label="Email do responsável" required placeholder="Email do responsável" value={emailMembro} onChange={e => setEmailMembro(e.target.value)} className="min-h-11 min-w-0 border border-white/25 bg-black px-3 text-white" />
-              <select aria-label="Região do suporte" value={regiaoMembro} onChange={e => setRegiaoMembro(e.target.value as RegiaoImip)} className="min-h-11 min-w-0 border border-white/25 bg-black px-3 text-white">
-                {REGIOES_IMIP.map(r => <option key={r.id} value={r.id}>Suporte {r.nome}</option>)}
-              </select>
-              <button type="submit" disabled={aAtribuir} className="min-h-11 bg-[#d6b56d] px-4 text-xs font-black text-black disabled:opacity-50">ATRIBUIR</button>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-300">Só é possível atribuir suporte a uma conta IMIP com email confirmado. A atribuição não altera os outros acessos do colaborador.</p>
+            <form onSubmit={atribuir} className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] lg:items-end">
+              <label htmlFor="email-responsavel-regional" className="block min-w-0 text-sm font-bold text-[#f0e6d1]">
+                Email da conta IMIP
+                <input
+                  id="email-responsavel-regional"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  required
+                  placeholder="email@exemplo.pt"
+                  value={emailMembro}
+                  onChange={e => { setEmailMembro(e.target.value); setErroAtribuicao(""); }}
+                  className="mt-2 min-h-12 w-full min-w-0 rounded-md border border-white/25 bg-black px-3 py-3 text-base text-white outline-none focus:border-[#d6b56d]"
+                />
+              </label>
+              <label htmlFor="regiao-responsavel-regional" className="block min-w-0 text-sm font-bold text-[#f0e6d1]">
+                Região
+                <select
+                  id="regiao-responsavel-regional"
+                  value={regiaoMembro}
+                  onChange={e => setRegiaoMembro(e.target.value as RegiaoImip)}
+                  className="mt-2 min-h-12 w-full min-w-0 rounded-md border border-white/25 bg-black px-3 py-3 text-base text-white outline-none focus:border-[#d6b56d]"
+                >
+                  {REGIOES_IMIP.map(r => <option key={r.id} value={r.id}>Suporte {r.nome}</option>)}
+                </select>
+              </label>
+              <button type="submit" disabled={aAtribuir} className="min-h-12 w-full rounded-md bg-[#d6b56d] px-6 py-3 text-sm font-black uppercase text-black disabled:opacity-50 lg:w-auto">
+                {aAtribuir ? "A ATRIBUIR..." : "ATRIBUIR SUPORTE"}
+              </button>
             </form>
+            {erroAtribuicao && (
+              <p role="alert" className="mt-4 border-l-4 border-red-500 bg-red-950/40 p-4 text-sm leading-relaxed text-red-100">
+                {erroAtribuicao}
+              </p>
+            )}
+            {sucessoAtribuicao && (
+              <p role="status" className="mt-4 border-l-4 border-[#d6b56d] bg-[#13271a] p-4 text-sm leading-relaxed text-[#e8c76c]">
+                {sucessoAtribuicao}
+              </p>
+            )}
             <div className="mt-5 space-y-2">
               {membros.map(m => <div key={m.auth_user_id} className="flex flex-wrap items-center justify-between gap-3 border border-white/15 p-3 text-sm">
                 <span className="break-all">{m.email_contacto} · {nomeRegiaoImip(m.regiao)} · {m.ativo ? "Ativo" : "Inativo"}</span>
