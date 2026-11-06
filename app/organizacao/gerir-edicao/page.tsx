@@ -1039,46 +1039,52 @@ export default function GerirEdicaoPage() {
           );
         }
 
-        const acessoGeral =
-          acesso === true;
-
-        setAdministrador(
-          acessoGeral,
-        );
-
-        // PROCURAR ORGANIZAÇÃO ATIVA
-
-        setEtapa(
-          "procurar a organização",
-        );
-
         const {
-          data: organizacao,
-          error: erroOrganizacao,
+          data: acessoRegional,
+          error: erroRegional,
         } = await comLimite(
-          supabase
-            .from("organizacoes")
-            .select("id")
-            .eq(
-              "auth_user_id",
-              user.id,
-            )
-            .eq("ativa", true)
-            .single(),
-          "procurar a organização",
+          supabase.rpc("tem_permissao_suporte", {
+            p_area: "ranking_resultados",
+          }),
+          "verificar suporte regional",
         );
 
-        if (!ativo) return;
+        if (erroRegional) {
+          throw new Error(`Suporte regional: ${erroRegional.message}`);
+        }
 
-        if (
-          erroOrganizacao ||
-          !organizacao
-        ) {
-          throw new Error(
-            erroOrganizacao
-              ? `Organização: ${erroOrganizacao.message}`
-              : "Não foi encontrada uma organização ativa associada a esta conta.",
-          );
+        const acessoGeral = acesso === true || acessoRegional === true;
+
+        setAdministrador(acessoGeral);
+
+        // Suportes regionais gerem resultados sem precisar de ser
+        // proprietários de uma organização/roda.
+        let organizacaoId = "";
+
+        if (!acessoGeral) {
+          setEtapa("procurar a organização");
+          const { data: organizacao, error: erroOrganizacao } =
+            await comLimite(
+              supabase
+                .from("organizacoes")
+                .select("id")
+                .eq("auth_user_id", user.id)
+                .eq("ativa", true)
+                .single(),
+              "procurar a organização",
+            );
+
+          if (!ativo) return;
+
+          if (erroOrganizacao || !organizacao) {
+            throw new Error(
+              erroOrganizacao
+                ? `Organização: ${erroOrganizacao.message}`
+                : "Não foi encontrada uma organização ativa associada a esta conta.",
+            );
+          }
+
+          organizacaoId = organizacao.id;
         }
 
         // ORGANIZADOR GERAL:
@@ -1130,7 +1136,7 @@ export default function GerirEdicaoPage() {
         if (!acessoGeral) {
           consulta = consulta.eq(
             "organizacao_id",
-            organizacao.id,
+            organizacaoId,
           );
         }
 
