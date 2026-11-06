@@ -235,7 +235,7 @@ export default function AlterarPasswordMCPage() {
   }
 
   return (
-    <main className="relative min-h-screen bg-black text-white">
+    <main className="relative isolate min-h-screen bg-black text-white">
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat"
@@ -246,8 +246,8 @@ export default function AlterarPasswordMCPage() {
         className="pointer-events-none fixed inset-0 bg-black/55"
       />
 
-      <div className="relative mx-auto flex min-h-screen max-w-3xl items-center px-5 py-12 sm:px-6">
-        <section className="w-full rounded-2xl border border-yellow-500/50 bg-black/90 p-6 shadow-2xl sm:p-10">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl items-center px-5 py-12 sm:px-6">
+        <section className="relative z-10 w-full rounded-2xl border border-yellow-500/50 bg-black/90 p-6 shadow-2xl sm:p-10">
           <p className="text-xs font-black tracking-[0.3em] text-yellow-500">
             {conviteSuporte ? "CONVITE · EQUIPA IMIP" : "PERFIL DE MC"}
           </p>
@@ -298,7 +298,7 @@ export default function AlterarPasswordMCPage() {
               </p>
             </div>
           ) : (
-            <form onSubmit={guardarNovaPassword} className="mt-8 space-y-5">
+            <form onSubmit={guardarNovaPassword} className="relative z-10 mt-8 space-y-5">
               <div>
                 <label
                   htmlFor="nova-password"
@@ -314,7 +314,8 @@ export default function AlterarPasswordMCPage() {
                   required
                   value={password}
                   onChange={(evento) => setPassword(evento.target.value)}
-                  className="w-full rounded-lg border border-zinc-600 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-yellow-500"
+                  onTouchEnd={(evento) => evento.currentTarget.focus()}
+                  className="relative z-10 block min-h-12 w-full touch-manipulation rounded-lg border border-zinc-600 bg-zinc-950 px-4 py-3 text-base text-white outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/35"
                   placeholder="Mínimo de 8 caracteres"
                 />
               </div>
@@ -334,7 +335,8 @@ export default function AlterarPasswordMCPage() {
                   required
                   value={confirmacao}
                   onChange={(evento) => setConfirmacao(evento.target.value)}
-                  className="w-full rounded-lg border border-zinc-600 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-yellow-500"
+                  onTouchEnd={(evento) => evento.currentTarget.focus()}
+                  className="relative z-10 block min-h-12 w-full touch-manipulation rounded-lg border border-zinc-600 bg-zinc-950 px-4 py-3 text-base text-white outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/35"
                   placeholder="Repete a nova palavra-passe"
                 />
               </div>
@@ -351,7 +353,7 @@ export default function AlterarPasswordMCPage() {
               <button
                 type="submit"
                 disabled={aGuardar}
-                className="w-full rounded-lg bg-yellow-500 px-5 py-3 font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="relative z-10 min-h-12 w-full touch-manipulation rounded-lg bg-yellow-500 px-5 py-3 text-base font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {aGuardar ? "A GUARDAR..." : "GUARDAR NOVA PALAVRA-PASSE"}
               </button>
