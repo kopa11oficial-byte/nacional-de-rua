@@ -3,12 +3,9 @@
 	"main": ".open-next/worker.js",
 	"name": "nacional-de-rua",
 	"workers_dev": true,
-	"routes": [
-		{
-			"pattern": "nacionalderua.pt",
-			"custom_domain": true
-		}
-	],
+	// Dominio futuro: nacionalderua.pt
+	// So adicionar routes/custom_domain depois da compra e ativacao da zona DNS.
+	// Manter o deploy atual exclusivamente em workers.dev.
 	"compatibility_date": "2026-08-17",
 	"compatibility_flags": [
 		"nodejs_compat",
