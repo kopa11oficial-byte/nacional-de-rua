@@ -81,6 +81,7 @@ type Edicao = {
   roda_id: string;
   nome: string | null;
   data_edicao: string;
+  estado: string;
 };
 
 type Roda = {
@@ -873,7 +874,7 @@ export default function PerfilMCPage() {
                 supabase
                   .from("edicoes")
                   .select(
-                    "id,epoca_id,roda_id,nome,data_edicao",
+                    "id,epoca_id,roda_id,nome,data_edicao,estado",
                   )
                   .in(
                     "id",
@@ -892,7 +893,11 @@ export default function PerfilMCPage() {
           if (!ativo) return;
 
           edicoesHistorico.push(
-            ...resposta,
+            ...resposta.filter((item) =>
+              item.data_edicao.slice(0, 4) === "2026" ||
+              (item.estado === "publicada" &&
+                Number(item.data_edicao.slice(5, 7)) <= 10)
+            ),
           );
         }
 
@@ -905,11 +910,12 @@ export default function PerfilMCPage() {
             ? await consultarTodas<{
                 id: string;
                 data_edicao: string;
+                estado: string;
               }>((inicio, fim) =>
                 supabase
                   .from("edicoes")
                   .select(
-                    "id,data_edicao",
+                    "id,data_edicao,estado",
                   )
                   .eq(
                     "epoca_id",
@@ -955,11 +961,8 @@ export default function PerfilMCPage() {
                 anoEdicao ===
                   selecionada.ano &&
                 mesEdicao >= 1 &&
-                mesEdicao <=
-                  (selecionada.ano ===
-                  2026
-                    ? 12
-                    : 10)
+                (selecionada.ano === 2026 || item.estado === "publicada") &&
+                mesEdicao <= (selecionada.ano === 2026 ? 12 : 10)
               );
             })
             .map(

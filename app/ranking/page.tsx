@@ -83,9 +83,9 @@ const temporadas: Record<
     fim: 9,
   },
   "4": {
-    titulo: "4.ª TEMPORADA · OUTUBRO A NOVEMBRO",
+    titulo: "4.ª TEMPORADA · OUTUBRO",
     inicio: 10,
-    fim: 11,
+    fim: 10,
   },
 };
 
@@ -123,7 +123,7 @@ function podeConfirmarFinalistas(ano: number) {
 
   return (
     anoAtual > ano ||
-    (anoAtual === ano && mesAtual >= 12)
+    (anoAtual === ano && mesAtual >= 11)
   );
 }
 
@@ -256,10 +256,11 @@ export default function RankingPage() {
         const edicoes = await consultarTodas<{
           id: string;
           data_edicao: string;
+          estado: string;
         }>((inicio, fim) =>
           supabase
             .from("edicoes")
-            .select("id,data_edicao")
+            .select("id,data_edicao,estado")
             .eq("epoca_id", epoca.id)
             .order("id")
             .range(inicio, fim),
@@ -284,12 +285,14 @@ export default function RankingPage() {
             }
 
             if (periodo === "anual") {
-              return ano === 2026 || mes <= 11;
+              return ano === 2026 || (mes <= 10 && edicao.estado === "publicada");
             }
 
             const temporada = temporadas[periodo];
 
             return (
+              (ano === 2026 || edicao.estado === "publicada") &&
+              mes <= (ano === 2026 ? 12 : 10) &&
               mes >= temporada.inicio &&
               mes <= temporada.fim
             );
@@ -959,7 +962,7 @@ export default function RankingPage() {
                 <option value="anual">
                   {ano === 2026
                     ? "RANKING ANUAL · TESTES"
-                    : "RANKING ANUAL · JANEIRO A NOVEMBRO"}
+                    : "RANKING ANUAL · JANEIRO A OUTUBRO"}
                 </option>
 
                 {Object.entries(
@@ -984,7 +987,7 @@ export default function RankingPage() {
               : periodo === "anual"
                 ? finalistas.length === 16
                   ? "Os 16 finalistas desta época já foram confirmados pelo administrador geral."
-                  : "De janeiro a novembro, os pontos somam-se no ranking anual. Os 16 primeiros ficam provisoriamente no apuramento, sujeito à validação de dezembro."
+                  : "De janeiro a outubro, as edições publicadas somam pontos no ranking anual. Em novembro são confirmados os 16 apurados para a Final Nacional do início de dezembro."
                 : "Esta é a classificação da temporada selecionada. Os pontos também contribuem para o ranking anual."}
           </p>
         </section>
