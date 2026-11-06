@@ -74,10 +74,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (utilizador.app_metadata?.tipo_acesso !== "mc") {
+    // A mesma conta pode ser MC e Suporte Regional.
+    // Autorizar pela ligação real ao perfil MC, não por um tipo exclusivo
+    // em app_metadata, para preservar os restantes privilégios da conta.
+    const { data: perfilMC, error: erroPerfilMC } = await supabaseAdmin
+      .from("mcs")
+      .select("id")
+      .eq("auth_user_id", utilizador.id)
+      .eq("ativo", true)
+      .maybeSingle();
+
+    if (erroPerfilMC || !perfilMC) {
       return responder(
         403,
-        "Esta página destina-se apenas a contas de MC.",
+        "A sessão atual não está associada a um perfil de MC. Abre a ligação de acesso enviada para a tua conta de MC.",
       );
     }
 
@@ -88,7 +98,6 @@ export async function POST(request: NextRequest) {
         password: corpo.password,
         app_metadata: {
           ...appMetadataAtual,
-          tipo_acesso: "mc",
           alterar_password_primeiro_acesso: false,
         },
       });
