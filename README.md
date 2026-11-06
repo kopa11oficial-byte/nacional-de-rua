@@ -10,7 +10,7 @@ Domínio provisório que deve continuar a funcionar durante a transição:
 
 `https://nacional-de-rua.rodasdeimproviso.workers.dev`
 
-O Worker chama-se `nacional-de-rua`. A configuração `wrangler.jsonc` já prevê `nacionalderua.pt` como **Custom Domain** e mantém `workers_dev: true` para não desativar o endereço anterior.
+O Worker chama-se `nacional-de-rua`. A configuração `wrangler.jsonc` mantém `workers_dev: true`. **A rota Custom Domain só pode ser ativada após a compra e ativação da zona de `nacionalderua.pt`**; até lá, não a incluir no deploy, para não bloquear a publicação do Worker.
 
 > **Pendente fora do GitHub:** confirmar que `nacionalderua.pt` foi registado e pertence à conta correta, ter uma zona DNS ativa na Cloudflare e realizar um deploy autorizado para o Custom Domain começar a servir tráfego. Alterar o ficheiro Wrangler **não regista um domínio**, nem prova que ele já esteja ativo.
 
@@ -43,7 +43,7 @@ npm run deploy
 ## Passagem para nacionalderua.pt
 
 1. **Domínio e DNS:** registar/confirmar titularidade de `nacionalderua.pt`, adicionar a zona DNS à mesma conta Cloudflare que aloja o Worker `nacional-de-rua` e verificar que está ativa. O Custom Domain requer uma zona ativa e não pode ser criado se existir um CNAME em conflito.
-2. **Cloudflare:** fazer deploy da versão atual do Worker (ou adicionar `nacionalderua.pt` em Workers & Pages > `nacional-de-rua` > Settings > Domains & Routes > Add > Custom Domain). O `wrangler.jsonc` já contém `routes: [{ pattern: "nacionalderua.pt", custom_domain: true }]` e `workers_dev: true`.
+2. **Cloudflare:** depois de a zona DNS estar ativa, adicionar a rota `routes: [{ pattern: "nacionalderua.pt", custom_domain: true }]` em `wrangler.jsonc` e fazer novo deploy (ou adicionar o domínio em Workers & Pages > `nacional-de-rua` > Settings > Domains & Routes > Add > Custom Domain). **Não fazer esta alteração antes da compra**, pois a Cloudflare rejeita o deploy.
 3. **Supabase Auth > URL Configuration:** configurar `Site URL` como `https://nacionalderua.pt` e adicionar aos `Redirect URLs` tanto `https://nacionalderua.pt/mcs/alterar-password` como `https://nacional-de-rua.rodasdeimproviso.workers.dev/mcs/alterar-password` durante a transição. Confirmar outros redirects existentes antes de os remover.
 4. **Variável Cloudflare `SITE_PUBLICO_URL`:** definir `https://nacionalderua.pt` **só após o domínio e os redirects estarem funcionais**. As rotas de criação de acesso e geração de ligação manual usam `lib/site-publico.ts`. Enquanto esta variável não estiver definida, os links de recuperação continuam a apontar para o domínio provisório.
 5. **Segredos Cloudflare:** manter `SUPABASE_SERVICE_ROLE_KEY` apenas como segredo do Worker; nunca em GitHub, frontend ou variáveis `NEXT_PUBLIC_*`.
