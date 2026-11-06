@@ -3,6 +3,7 @@ name: Validar IMIP
 on:
   push:
     branches:
+      - main
       - correcao-imip-acessos-20261024
   pull_request:
   workflow_dispatch:
