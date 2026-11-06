@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
     const { data: eAdministrador, error: erroAdmin } =
-      await comoOperador.rpc("e_administrador");
+      await comoOperador.rpc("tem_acesso_central_imip");
     if (erroAdmin || eAdministrador !== true) {
       return responder(403, { erro: "Só o Suporte Geral pode gerar convites." });
     }
