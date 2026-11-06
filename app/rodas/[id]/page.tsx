@@ -73,6 +73,7 @@ type Edicao = {
   epoca_id: string;
   nome: string;
   data_edicao: string;
+  estado: string;
   numero_temporada: number | null;
   numero_edicao: number | null;
 };
@@ -730,7 +731,7 @@ export default function RankingRodaPage() {
               supabase
                 .from("edicoes")
                 .select(
-                  "id,epoca_id,nome,data_edicao,numero_temporada,numero_edicao",
+                  "id,epoca_id,nome,data_edicao,estado,numero_temporada,numero_edicao",
                 )
                 .eq("roda_id", rodaId)
                 .order("data_edicao", {
@@ -1031,7 +1032,7 @@ export default function RankingRodaPage() {
               supabase
                 .from("edicoes")
                 .select(
-                  "id,epoca_id,nome,data_edicao,numero_temporada,numero_edicao",
+                  "id,epoca_id,nome,data_edicao,estado,numero_temporada,numero_edicao",
                 )
                 .eq("roda_id", rodaId)
                 .eq("epoca_id", epocaId)
@@ -1042,17 +1043,24 @@ export default function RankingRodaPage() {
                 .range(inicio, fim),
           );
 
-        setEdicoes(listaEdicoes);
+        // Testes de 2026 preservados; oficial usa apenas edições publicadas até outubro.
+        const edicoesValidas = listaEdicoes.filter((edicao) =>
+          edicao.data_edicao.slice(0, 4) === "2026" ||
+          (edicao.estado === "publicada" &&
+            Number(edicao.data_edicao.slice(5, 7)) <= 10)
+        );
+
+        setEdicoes(edicoesValidas);
 
         setTemporada(
-          listaEdicoes.find(
+          edicoesValidas.find(
             (item) =>
               item.numero_temporada != null,
           )?.numero_temporada ?? null,
         );
 
         const idsEdicoes =
-          listaEdicoes.map(
+          edicoesValidas.map(
             (item) => item.id,
           );
 
