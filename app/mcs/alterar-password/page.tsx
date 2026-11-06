@@ -42,6 +42,7 @@ export default function AlterarPasswordMCPage() {
   const [confirmacao, setConfirmacao] = useState("");
   const [aGuardar, setAGuardar] = useState(false);
   const [concluido, setConcluido] = useState(false);
+  const [conviteSuporte, setConviteSuporte] = useState(false);
   const [erro, setErro] = useState("");
 
   useEffect(() => {
@@ -113,25 +114,33 @@ export default function AlterarPasswordMCPage() {
           throw new Error("Não foi possível validar o utilizador.");
         }
 
-        // Uma conta pode acumular perfil MC e suporte regional.
-        // Exigir a associação efetiva ao MC, e não um rótulo único.
-        const { data: perfisMC, error: erroPerfil } = await supabase
-          .from("mcs")
-          .select("id")
-          .eq("auth_user_id", utilizador.user.id)
-          .eq("ativo", true)
-          .limit(1);
+        // A mesma página valida links de MC e novos convites do Suporte.
+        // O convite não concede poderes regionais: só permite escolher password.
+        const eConviteSuporte =
+          utilizador.user.app_metadata?.convite_suporte_pendente === true &&
+          Boolean(utilizador.user.email_confirmed_at);
 
-        if (erroPerfil) {
-          throw new Error("Não foi possível verificar o acesso ao perfil.");
-        }
-        if (!perfisMC || perfisMC.length === 0) {
-          throw new Error(
-            "A sessão aberta não está associada ao teu perfil de MC. Abre a ligação de acesso da conta correta.",
-          );
+        if (!eConviteSuporte) {
+          // Uma conta pode acumular perfil MC e suporte regional.
+          const { data: perfisMC, error: erroPerfil } = await supabase
+            .from("mcs")
+            .select("id")
+            .eq("auth_user_id", utilizador.user.id)
+            .eq("ativo", true)
+            .limit(1);
+
+          if (erroPerfil) {
+            throw new Error("Não foi possível verificar o acesso ao perfil.");
+          }
+          if (!perfisMC || perfisMC.length === 0) {
+            throw new Error(
+              "A sessão aberta não está associada ao teu perfil de MC nem a um convite de suporte válido.",
+            );
+          }
         }
 
         if (componenteActivo) {
+          setConviteSuporte(eConviteSuporte);
           setSessaoValida(true);
           setAVerificarSessao(false);
           setErro("");
@@ -240,15 +249,21 @@ export default function AlterarPasswordMCPage() {
       <div className="relative mx-auto flex min-h-screen max-w-3xl items-center px-5 py-12 sm:px-6">
         <section className="w-full rounded-2xl border border-yellow-500/50 bg-black/90 p-6 shadow-2xl sm:p-10">
           <p className="text-xs font-black tracking-[0.3em] text-yellow-500">
-            PERFIL DE MC
+            {conviteSuporte ? "CONVITE · EQUIPA IMIP" : "PERFIL DE MC"}
           </p>
 
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">
-            ALTERAR <span className="text-yellow-500">PALAVRA-PASSE</span>
+            {conviteSuporte ? (
+              <>ATIVAR <span className="text-yellow-500">CONTA IMIP</span></>
+            ) : (
+              <>ALTERAR <span className="text-yellow-500">PALAVRA-PASSE</span></>
+            )}
           </h1>
 
           <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base">
-            Define uma palavra-passe para proteger o acesso ao teu perfil.
+            {conviteSuporte
+              ? "Confirma o teu convite e define uma palavra-passe. O Suporte Geral atribuirá a região após esta ativação."
+              : "Define uma palavra-passe para proteger o acesso ao teu perfil."}
           </p>
 
           {aVerificarSessao ? (
@@ -264,8 +279,9 @@ export default function AlterarPasswordMCPage() {
                 PALAVRA-PASSE ALTERADA
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-200">
-                A tua nova palavra-passe está guardada. Já podes aceder ao teu
-                perfil de MC.
+                {conviteSuporte
+                  ? "A conta está ativada. Informa o Suporte Geral para atribuir a tua região. Ainda não tens permissões de suporte."
+                  : "A tua nova palavra-passe está guardada. Já podes aceder ao teu perfil de MC."}
               </p>
             </div>
           ) : !sessaoValida ? (
