@@ -223,8 +223,8 @@ export default function SuportesFlutuantes() {
             aria-hidden="true"
             className="hidden h-1 w-5 rounded-full bg-[#b3202b] xl:block"
           />
-          <span aria-hidden="true" className="text-[10px] font-black tracking-wide text-[#111410] xl:hidden">
-            APOIO
+          <span aria-hidden="true" className="text-[9px] font-black tracking-tight text-[#111410] xl:hidden">
+            SUPORTE
           </span>
         </button>
 
