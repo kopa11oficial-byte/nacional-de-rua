@@ -3,6 +3,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type AreaId =
@@ -53,6 +54,7 @@ const areas: Area[] = [
 ];
 
 export default function SuportesFlutuantes() {
+  const caminho = usePathname();
   const [aberto, setAberto] = useState(false);
   const [areaSelecionada, setAreaSelecionada] =
     useState<AreaId | null>(null);
@@ -99,6 +101,15 @@ export default function SuportesFlutuantes() {
     setAreaSelecionada((atual) =>
       atual === id ? null : id,
     );
+  }
+
+  // Em autenticação e ativação não pode existir nenhum painel
+  // flutuante, backdrop ou camada que intercete toques nos campos.
+  if (
+    caminho === "/mcs/alterar-password" ||
+    caminho === "/organizacao/login"
+  ) {
+    return null;
   }
 
   return (
