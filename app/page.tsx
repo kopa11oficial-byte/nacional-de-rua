@@ -123,10 +123,11 @@ function useRankingPrincipal(ano: number) {
         const edicoes = await consultarTodas<{
           id: string;
           data_edicao: string;
+          estado: string;
         }>((inicio, fim) =>
           supabase
             .from("edicoes")
-            .select("id,data_edicao")
+            .select("id,data_edicao,estado")
             .eq("epoca_id", epoca.id)
             .order("id")
             .range(inicio, fim),
@@ -144,7 +145,8 @@ function useRankingPrincipal(ano: number) {
 
             return (
               anoEdicao === ano &&
-              (ano === 2026 || mes <= 11)
+              mes >= 1 &&
+              (ano === 2026 || (mes <= 10 && edicao.estado === "publicada"))
             );
           })
           .map((edicao) => edicao.id);
