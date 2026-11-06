@@ -146,7 +146,7 @@ export default function SuportesFlutuantes() {
       */}
 
       <div
-        className="fixed bottom-3 right-0 z-[80] xl:bottom-auto xl:top-1/2 xl:-translate-y-1/2"
+        className="pointer-events-none fixed bottom-3 right-0 z-[80] xl:bottom-auto xl:top-1/2 xl:-translate-y-1/2"
         onPointerEnter={(evento) => {
           if (evento.pointerType === "mouse") {
             setAberto(true);
@@ -159,7 +159,7 @@ export default function SuportesFlutuantes() {
         }}
       >
         <div
-          className="flex items-end transition-transform duration-300 ease-out xl:items-center"
+          className="pointer-events-auto flex items-end transition-transform duration-300 ease-out xl:items-center"
           style={{
             transform: aberto
               ? "translateX(0)"
