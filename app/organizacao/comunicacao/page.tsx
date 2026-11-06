@@ -142,7 +142,7 @@ export default function CentralComunicacaoImip() {
     setConviteCopiado(false);
 
     const email = emailMembro.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setErroConvite("Indica um email válido antes de gerar o convite.");
       return;
     }
