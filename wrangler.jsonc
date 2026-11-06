@@ -2,6 +2,13 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
 	"name": "nacional-de-rua",
+	"workers_dev": true,
+	"routes": [
+		{
+			"pattern": "nacionalderua.pt",
+			"custom_domain": true
+		}
+	],
 	"compatibility_date": "2026-08-17",
 	"compatibility_flags": [
 		"nodejs_compat",
