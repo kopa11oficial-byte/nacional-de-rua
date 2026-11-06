@@ -135,12 +135,7 @@ export default function SuportesFlutuantes() {
       */}
 
       <div
-        className="fixed right-0 top-1/2 z-[80] flex items-center transition-transform duration-300 ease-out"
-        style={{
-          transform: aberto
-            ? "translateY(-50%) translateX(0)"
-            : "translateY(-50%) translateX(calc(100% - 48px))",
-        }}
+        className="fixed bottom-3 right-0 z-[80] xl:bottom-auto xl:top-1/2 xl:-translate-y-1/2"
         onPointerEnter={(evento) => {
           if (evento.pointerType === "mouse") {
             setAberto(true);
@@ -152,6 +147,14 @@ export default function SuportesFlutuantes() {
           }
         }}
       >
+        <div
+          className="flex items-end transition-transform duration-300 ease-out xl:items-center"
+          style={{
+            transform: aberto
+              ? "translateX(0)"
+              : "translateX(calc(100% - 48px))",
+          }}
+        >
         {/*
           ABA DOURADA
 
@@ -170,7 +173,7 @@ export default function SuportesFlutuantes() {
           aria-expanded={aberto}
           aria-controls="central-apoio-imip"
           className={
-            "relative flex h-44 w-12 shrink-0 " +
+            "relative flex h-12 w-12 shrink-0 xl:h-44 " +
             "cursor-pointer flex-col items-center " +
             "justify-center gap-3 " +
             "rounded-l-xl " +
@@ -186,12 +189,12 @@ export default function SuportesFlutuantes() {
         >
           <span
             aria-hidden="true"
-            className="h-1 w-5 rounded-full bg-[#087a43]"
+            className="hidden h-1 w-5 rounded-full bg-[#087a43] xl:block"
           />
 
           <span
             className={
-              "rotate-180 text-[17px] " +
+              "hidden rotate-180 text-[17px] xl:block " +
               "font-black uppercase " +
               "tracking-[0.14em] " +
               "text-[#111410]"
@@ -207,8 +210,11 @@ export default function SuportesFlutuantes() {
 
           <span
             aria-hidden="true"
-            className="h-1 w-5 rounded-full bg-[#b3202b]"
+            className="hidden h-1 w-5 rounded-full bg-[#b3202b] xl:block"
           />
+          <span aria-hidden="true" className="text-[10px] font-black tracking-wide text-[#111410] xl:hidden">
+            APOIO
+          </span>
         </button>
 
         {/*
@@ -405,6 +411,7 @@ export default function SuportesFlutuantes() {
             </div>
           </div>
         </aside>
+        </div>
       </div>
     </>
   );
