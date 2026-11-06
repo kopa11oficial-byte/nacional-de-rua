@@ -7,6 +7,8 @@ import { boldIMIP, veneerIMIP } from "../fonts/identidade";
 import { supabase } from "../../lib/supabase";
 import { consultarTodas } from "../../lib/consultar-todas";
 
+/* eslint-disable @next/next/no-img-element */
+
 /*
   ==================================================
   NACIONAL DE RUA — IMIP
@@ -35,6 +37,7 @@ type RankingItem = {
   nome: string;
   cidade: string | null;
   distrito: string | null;
+  foto_url: string | null;
   pontos: number;
   vitorias20: number;
   participacoes: number;
@@ -124,6 +127,63 @@ function podeConfirmarFinalistas(ano: number) {
   return (
     anoAtual > ano ||
     (anoAtual === ano && mesAtual >= 11)
+  );
+}
+
+// Fotografias reais dos perfis: sem imagem, o pódio usa um avatar neutro.
+function FotoMcPodio({
+  nome,
+  fotoUrl,
+  destaque,
+}: {
+  nome: string;
+  fotoUrl: string | null;
+  destaque: boolean;
+}) {
+  const [falhou, setFalhou] = useState(false);
+
+  useEffect(() => {
+    setFalhou(false);
+  }, [fotoUrl]);
+
+  const url = fotoUrl?.trim().startsWith("https://")
+    ? fotoUrl.trim()
+    : null;
+
+  return (
+    <div
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden border-2 shadow-[0_6px_15px_rgba(0,0,0,.18)] ${
+        destaque
+          ? "h-28 w-28 border-[#2d3c2d]/45 bg-[#c5a357] sm:h-32 sm:w-32"
+          : "h-24 w-24 border-[#d6b56d]/55 bg-[#223028] sm:h-28 sm:w-28"
+      }`}
+    >
+      {url && !falhou ? (
+        <img
+          src={url}
+          alt={`Fotografia de ${nome}`}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+          onError={() => setFalhou(true)}
+        />
+      ) : (
+        <div
+          className={`flex h-full w-full flex-col items-center justify-center gap-1 ${
+            destaque ? "text-[#26372c]" : "text-[#e1d7be]"
+          }`}
+          role="img"
+          aria-label={`Fotografia de ${nome} ainda não disponível`}
+        >
+          <span className="text-4xl font-black uppercase leading-none">
+            {nome.trim().charAt(0).toUpperCase() || "?"}
+          </span>
+          <span className="text-[9px] font-bold uppercase tracking-[0.12em]">
+            SEM FOTO
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -593,6 +653,7 @@ export default function RankingPage() {
           cidade: string | null;
           distrito: string | null;
           por_confirmar: boolean;
+          foto_url: string | null;
         };
 
         const mcsData: McDb[] = [];
@@ -608,7 +669,7 @@ export default function RankingPage() {
                 supabase
                   .from("mcs")
                   .select(
-                    "id,nome_artistico,cidade,distrito,por_confirmar",
+                    "id,nome_artistico,cidade,distrito,por_confirmar,foto_url",
                   )
                   .in(
                     "id",
@@ -644,6 +705,7 @@ export default function RankingPage() {
 
             cidade: mc.cidade,
             distrito: mc.distrito,
+            foto_url: mc.foto_url,
 
             pontos:
               totais.get(mc.id) ?? 0,
@@ -1159,19 +1221,26 @@ export default function RankingPage() {
                           )}
                         </span>
 
-                        <span
-                          className={`text-[10px] font-black uppercase tracking-[0.12em] ${
-                            destaque
-                              ? "text-[#273627]"
-                              : "text-[#d6b56d]"
-                          }`}
-                        >
-                          {lugar === 1
-                            ? "1.º LUGAR"
-                            : lugar === 2
-                              ? "2.º LUGAR"
-                              : "3.º LUGAR"}
-                        </span>
+                        <div className="flex shrink-0 flex-col items-end gap-3">
+                          <span
+                            className={`text-[10px] font-black uppercase tracking-[0.12em] ${
+                              destaque
+                                ? "text-[#273627]"
+                                : "text-[#d6b56d]"
+                            }`}
+                          >
+                            {lugar === 1
+                              ? "1.º LUGAR"
+                              : lugar === 2
+                                ? "2.º LUGAR"
+                                : "3.º LUGAR"}
+                          </span>
+                          <FotoMcPodio
+                            nome={mc.nome}
+                            fotoUrl={mc.foto_url}
+                            destaque={destaque}
+                          />
+                        </div>
                       </div>
 
                       <div className="mt-auto pt-5">
