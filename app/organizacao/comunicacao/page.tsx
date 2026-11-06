@@ -78,7 +78,7 @@ export default function CentralComunicacaoImip() {
       } else {
         setTemAcesso(true);
         setAdministrador(geral.data === true);
-        void carregar(user.id, geral.data === true);
+        void carregar(user.id, true);
       }
       setCarregando(false);
     }
@@ -88,7 +88,7 @@ export default function CentralComunicacaoImip() {
 
   useEffect(() => {
     if (!userId || !temAcesso) return;
-    const i = setInterval(() => void carregar(userId, administrador), 15000);
+    const i = setInterval(() => void carregar(userId, true), 15000);
     return () => clearInterval(i);
   }, [userId, temAcesso, administrador, carregar]);
 
@@ -126,7 +126,7 @@ export default function CentralComunicacaoImip() {
       } else {
         setSucessoAtribuicao("Responsável regional ativado com sucesso.");
         setEmailMembro("");
-        await carregar(userId, administrador);
+        await carregar(userId, true);
       }
     } catch {
       setErroAtribuicao("Não foi possível comunicar com o serviço. Tenta novamente.");
@@ -289,10 +289,10 @@ export default function CentralComunicacaoImip() {
               </> : <div className="border border-white/20 bg-black/50 p-6 text-sm text-zinc-300">Escolhe uma proposta para consultar o histórico, responder ou acrescentar uma nota interna.</div>}
             </div>
           </div>
-          {administrador && <section className="mt-9 border border-[#d6b56d]/40 bg-[#0e1a12] p-5 sm:p-7">
-            <p className="text-xs font-black tracking-widest text-[#d6b56d]">SÓ SUPORTE GERAL</p>
+          {temAcesso && <section className="mt-9 border border-[#d6b56d]/40 bg-[#0e1a12] p-5 sm:p-7">
+            <p className="text-xs font-black tracking-widest text-[#d6b56d]">EQUIPA DE SUPORTE IMIP</p>
             <h2 className="mt-2 text-xl font-black">ATRIBUIR RESPONSÁVEIS REGIONAIS</h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-300">Só é possível atribuir suporte a uma conta IMIP com email confirmado. A atribuição não altera os outros acessos do colaborador.</p>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-300">Podes criar ou gerir responsáveis regionais. Atribuir um suporte exige uma conta IMIP com email confirmado e não altera os outros acessos da pessoa.</p>
             <form onSubmit={atribuir} className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] lg:items-end">
               <label htmlFor="email-responsavel-regional" className="block min-w-0 text-sm font-bold text-[#f0e6d1]">
                 Email da conta IMIP
