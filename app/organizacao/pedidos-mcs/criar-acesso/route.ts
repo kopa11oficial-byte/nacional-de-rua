@@ -368,9 +368,7 @@ export async function POST(request: NextRequest) {
     const {
       data: eAdministrador,
       error: erroPermissao,
-    } = await clienteComSessao.rpc(
-      "e_administrador",
-    );
+    } = await clienteComSessao.rpc("tem_permissao_suporte", { p_area: "mcs_participacao" });
 
     if (
       erroPermissao ||
