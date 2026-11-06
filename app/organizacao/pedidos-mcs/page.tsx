@@ -142,7 +142,7 @@ export default function PedidosAcessoMCsPage() {
 
     try {
       const { data: acesso, error: erroAcesso } =
-        await supabase.rpc("e_administrador");
+        await supabase.rpc("tem_permissao_suporte", { p_area: "mcs_participacao" });
 
       if (erroAcesso || acesso !== true) {
         setAdministrador(false);
