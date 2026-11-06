@@ -437,6 +437,39 @@ export default function SuportePage() {
               </section>
             )}
 
+            {!suporteGeral && (
+              <section className="mt-8 border border-[#e8c76c]/40 bg-black/85 p-4 sm:p-7">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#e8c76c]">
+                  EQUIPA REGIONAL · ACESSOS OPERACIONAIS
+                </p>
+                <h2 className="mt-3 text-xl font-black uppercase sm:text-2xl">
+                  GESTÃO DE PEDIDOS E RESULTADOS
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">
+                  Estas funções estão disponíveis para os suportes regionais autorizados.
+                  Confirma sempre os dados antes de aprovar pedidos ou corrigir pontuações.
+                </p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {[
+                    { titulo: "APROVAR ACESSOS DE MCs", destino: "/organizacao/pedidos-mcs" },
+                    { titulo: "APROVAR ORGANIZADORES", destino: "/organizacao/pedidos-organizadores" },
+                    { titulo: "APROVAR NOVAS RODAS", destino: "/organizacao/pedidos-registo-rodas" },
+                    { titulo: "CONFERIR RESULTADOS E PONTUAÇÕES", destino: "/organizacao/gerir-edicao" },
+                    { titulo: "CRIAR E GERIR OUTROS SUPORTES", destino: "/organizacao/comunicacao" },
+                  ].map(acao => (
+                    <Link
+                      key={acao.destino}
+                      href={acao.destino}
+                      className="flex min-h-14 items-center justify-between gap-3 rounded-lg border border-[#e8c76c]/55 bg-[#111b15] px-4 py-4 text-sm font-black text-[#f0e6d1] transition hover:border-[#e8c76c] hover:bg-[#1d3124] focus-visible:outline-2 focus-visible:outline-[#e8c76c]"
+                    >
+                      <span>{acao.titulo}</span>
+                      <span aria-hidden="true" className="shrink-0 text-lg text-[#e8c76c]">→</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section className="mt-10">
               <p className="text-xs font-black tracking-[0.2em] text-[#e8c76c]">
                 FERRAMENTAS FUNCIONAIS EXISTENTES
