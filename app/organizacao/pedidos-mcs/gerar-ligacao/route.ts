@@ -1,14 +1,13 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { urlRecuperacaoMC } from "../../../../lib/site-publico";
 
 type Bindings = {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  SITE_PUBLICO_URL?: string;
 };
-
-const URL_ALTERAR_PASSWORD =
-  "https://nacional-de-rua.rodasdeimproviso.workers.dev/mcs/alterar-password";
 
 const headersPrivados = {
   "Cache-Control": "no-store, no-cache, private, max-age=0",
@@ -47,8 +46,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const { env } = getCloudflareContext();
-    const { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: chave } =
+    const { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: chave, SITE_PUBLICO_URL: sitePublico } =
       env as unknown as Bindings;
+    const urlRecuperacao = urlRecuperacaoMC(sitePublico);
 
     if (!url || !chave) {
       return falhar(503, "Configuração de autenticação indisponível.");
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       await admin.auth.admin.generateLink({
         type: "recovery",
         email: pedido.email,
-        options: { redirectTo: URL_ALTERAR_PASSWORD },
+        options: { redirectTo: urlRecuperacao },
       });
 
     if (erroLigacao || !ligacao.properties?.action_link) {
