@@ -76,6 +76,35 @@ export async function POST(request: NextRequest) {
       return responder(403, { erro: "Só o Suporte Geral pode gerar convites." });
     }
 
+    // Convites servem apenas para NOVAS contas. Nunca alterar metadados
+    // nem gerar um token de convite para contas já existentes.
+    let listaCompleta = false;
+    for (let pagina = 1; pagina <= 10; pagina++) {
+      const { data: utilizadores, error: erroLista } =
+        await admin.auth.admin.listUsers({ page: pagina, perPage: 200 });
+      if (erroLista || !utilizadores) {
+        return responder(503, { erro: "Não foi possível verificar as contas existentes." });
+      }
+      if (
+        utilizadores.users.some(
+          (conta) => conta.email?.trim().toLowerCase() === email,
+        )
+      ) {
+        return responder(409, {
+          erro: "Já existe uma conta com este email. Se estiver confirmada, usa ATRIBUIR SUPORTE. Caso contrário, o Suporte Geral deve resolver a confirmação dessa conta.",
+        });
+      }
+      if (utilizadores.users.length < 200) {
+        listaCompleta = true;
+        break;
+      }
+    }
+    if (!listaCompleta) {
+      return responder(503, {
+        erro: "A verificação de contas excedeu o limite. Não foi criado nenhum convite.",
+      });
+    }
+
     // Links de convite são gerados localmente; o SMTP do projeto não está ativo.
     // Reutilizamos o callback de recuperação já permitido pela configuração Auth.
     const redirectTo = urlRecuperacaoMC(SITE_PUBLICO_URL);
