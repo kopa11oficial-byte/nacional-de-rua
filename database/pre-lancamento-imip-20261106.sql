@@ -12,36 +12,44 @@ CREATE POLICY "edicoes_publicas_2026_ou_publicadas_oficiais" ON public.edicoes
 -- Pontuações e batalhas de rascunhos oficiais apenas para seus gestores.
 DROP POLICY IF EXISTS "Leitura publica batalhas" ON public.batalhas;
 DROP POLICY IF EXISTS "acesso_le_batalhas" ON public.batalhas;
-CREATE POLICY "batalhas_visiveis_por_edicao_e_gestor" ON public.batalhas
+CREATE POLICY "batalhas_publicas_oficiais" ON public.batalhas
   FOR SELECT TO anon, authenticated
   USING (EXISTS (
     SELECT 1 FROM public.edicoes e
-    WHERE e.id = batalhas.edicao_id
-      AND (e.data_edicao < DATE '2027-01-01' OR e.estado='publicada'
-        OR ((select auth.uid()) IS NOT NULL AND public.pode_gerir_edicao(batalhas.edicao_id)))
+    WHERE e.id=batalhas.edicao_id
+      AND (e.data_edicao < DATE '2027-01-01' OR e.estado='publicada')
   ));
+CREATE POLICY "batalhas_privadas_gestor" ON public.batalhas
+  FOR SELECT TO authenticated USING ((select public.pode_gerir_edicao(edicao_id)));
 
 DROP POLICY IF EXISTS "Leitura publica participacoes" ON public.participacoes;
 DROP POLICY IF EXISTS "acesso_le_participacoes" ON public.participacoes;
-CREATE POLICY "participacoes_visiveis_por_edicao_e_gestor" ON public.participacoes
+CREATE POLICY "participacoes_publicas_oficiais" ON public.participacoes
   FOR SELECT TO anon, authenticated
   USING (EXISTS (
     SELECT 1 FROM public.batalhas b
     JOIN public.edicoes e ON e.id=b.edicao_id
     WHERE b.id=participacoes.batalha_id
-      AND (e.data_edicao < DATE '2027-01-01' OR e.estado='publicada'
-        OR ((select auth.uid()) IS NOT NULL AND public.pode_gerir_edicao(e.id)))
+      AND (e.data_edicao < DATE '2027-01-01' OR e.estado='publicada')
+  ));
+CREATE POLICY "participacoes_privadas_gestor" ON public.participacoes
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM public.batalhas b
+    WHERE b.id=participacoes.batalha_id
+      AND public.pode_gerir_edicao(b.edicao_id)
   ));
 
 DROP POLICY IF EXISTS "pontuacoes_leitura_publica" ON public.pontuacoes;
-CREATE POLICY "pontuacoes_visiveis_por_edicao_e_gestor" ON public.pontuacoes
+CREATE POLICY "pontuacoes_publicas_oficiais" ON public.pontuacoes
   FOR SELECT TO anon, authenticated
   USING (EXISTS (
     SELECT 1 FROM public.edicoes e
-    WHERE e.id = pontuacoes.edicao_id
-      AND (e.data_edicao < DATE '2027-01-01' OR e.estado='publicada'
-        OR ((select auth.uid()) IS NOT NULL AND public.pode_gerir_edicao(pontuacoes.edicao_id)))
+    WHERE e.id=pontuacoes.edicao_id
+      AND (e.data_edicao < DATE '2027-01-01' OR e.estado='publicada')
   ));
+CREATE POLICY "pontuacoes_privadas_gestor" ON public.pontuacoes
+  FOR SELECT TO authenticated USING ((select public.pode_gerir_edicao(edicao_id)));
 
 -- Vista antiga herda RLS do utilizador em vez de contornar a segurança.
 ALTER VIEW public.ranking_nacional SET (security_invoker = true);
