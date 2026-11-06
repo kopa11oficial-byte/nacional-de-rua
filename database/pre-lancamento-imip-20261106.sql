@@ -112,8 +112,7 @@ BEGIN
   SELECT p_ano, ordem::integer, id
   FROM unnest(p_mcs) WITH ORDINALITY AS lista(id, ordem);
 END;
-$function$
-
+$function$;
 
 -- Pré-criar 2027 sem activar prematuramente; 2026 continua como época de testes.
 INSERT INTO public.epocas (nome,ano,data_inicio,data_fim,estado)
