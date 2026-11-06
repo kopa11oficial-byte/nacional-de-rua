@@ -103,11 +103,13 @@ type Mc = {
   id: string;
   nome_artistico: string;
   por_confirmar: boolean;
+  foto_url: string | null;
 };
 
 type LinhaRanking = {
   id: string;
   nome: string;
+  foto_url: string | null;
   pontos: number;
   vitorias20: number;
   participacoes: number;
@@ -380,6 +382,51 @@ function LogotipoRoda({
   );
 }
 
+// O pódio da roda reutiliza a fotografia existente no perfil do MC.
+function FotoMcPodioRoda({
+  nome,
+  fotoUrl,
+}: {
+  nome: string;
+  fotoUrl: string | null;
+}) {
+  const [falhou, setFalhou] = useState(false);
+
+  useEffect(() => {
+    setFalhou(false);
+  }, [fotoUrl]);
+
+  const url = ligacaoSegura(fotoUrl);
+
+  return (
+    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden border-2 border-[#d6b56d]/55 bg-[#223028] shadow-[0_6px_15px_rgba(0,0,0,.25)] sm:h-28 sm:w-28">
+      {url && !falhou ? (
+        <img
+          src={url}
+          alt={`Fotografia de ${nome}`}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+          onError={() => setFalhou(true)}
+        />
+      ) : (
+        <div
+          className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#e1d7be]"
+          role="img"
+          aria-label={`Fotografia de ${nome} ainda não disponível`}
+        >
+          <span className="text-4xl font-black uppercase leading-none">
+            {nome.trim().charAt(0).toUpperCase() || "?"}
+          </span>
+          <span className="text-[9px] font-bold uppercase tracking-[0.12em]">
+            SEM FOTO
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ===================================================
 // CARTÃO DO PÓDIO
 // ===================================================
@@ -420,15 +467,19 @@ function CartaoPodio({
       </div>
 
       <div className="relative">
-        <span
-          className="inline-flex h-11 w-11 items-center justify-center border text-xl font-black"
-          style={{
-            borderColor: cor,
-            color: cor,
-          }}
-        >
-          {posicao}º
-        </span>
+        <div className="flex items-start justify-between gap-3">
+          <span
+            className="inline-flex h-11 w-11 items-center justify-center border text-xl font-black"
+            style={{
+              borderColor: cor,
+              color: cor,
+            }}
+          >
+            {posicao}º
+          </span>
+
+          <FotoMcPodioRoda nome={mc.nome} fotoUrl={mc.foto_url} />
+        </div>
 
         <p
           className="mt-5 text-[10px] font-black uppercase tracking-[0.17em]"
@@ -1316,7 +1367,7 @@ export default function RankingRodaPage() {
         } = await supabase
           .from("mcs")
           .select(
-            "id,nome_artistico,por_confirmar",
+            "id,nome_artistico,por_confirmar,foto_url",
           )
           .in("id", idsMcs);
 
@@ -1337,6 +1388,7 @@ export default function RankingRodaPage() {
                 ? " (sem registo)"
                 : ""
             }`,
+            foto_url: mc.foto_url,
 
             pontos:
               pontos.get(mc.id) ?? 0,
