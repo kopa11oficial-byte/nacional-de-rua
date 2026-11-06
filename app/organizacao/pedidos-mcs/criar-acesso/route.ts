@@ -2,10 +2,12 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { urlRecuperacaoMC } from "../../../../lib/site-publico";
 
 type CloudflareBindings = {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  SITE_PUBLICO_URL?: string;
 };
 
 type PedidoAcesso = {
@@ -27,12 +29,6 @@ type CorpoPedido = {
   acao?: string;
   password?: string;
 };
-
-const SITE_PUBLICO =
-  "https://nacional-de-rua.rodasdeimproviso.workers.dev";
-
-const URL_ALTERAR_PASSWORD =
-  `${SITE_PUBLICO}/mcs/alterar-password`;
 
 function responder(
   status: number,
@@ -105,11 +101,12 @@ function criarAdmin(
 async function enviarEmailAcesso(
   admin: SupabaseClient,
   email: string,
+  urlRecuperacao: string,
 ): Promise<boolean> {
   try {
     const { error } =
       await admin.auth.resetPasswordForEmail(email, {
-        redirectTo: URL_ALTERAR_PASSWORD,
+        redirectTo: urlRecuperacao,
       });
 
     if (error) {
@@ -223,6 +220,7 @@ export async function POST(request: NextRequest) {
     const url = env.SUPABASE_URL;
     const chaveSecreta =
       env.SUPABASE_SERVICE_ROLE_KEY;
+    const urlRecuperacao = urlRecuperacaoMC(env.SITE_PUBLICO_URL);
 
     if (!url || !chaveSecreta) {
       return responder(
@@ -481,7 +479,8 @@ export async function POST(request: NextRequest) {
       const emailEnviado = await enviarEmailAcesso(
         admin,
         email,
-      );
+      urlRecuperacao,
+    );
 
       if (!emailEnviado) {
         return responder(
@@ -740,6 +739,7 @@ export async function POST(request: NextRequest) {
     const emailEnviado = await enviarEmailAcesso(
       admin,
       email,
+      urlRecuperacao,
     );
 
     return sucesso(
