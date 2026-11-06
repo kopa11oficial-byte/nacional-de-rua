@@ -49,13 +49,13 @@ export default function AlterarPasswordMCPage() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_evento, sessao) => {
+    } = supabase.auth.onAuthStateChange((evento) => {
       if (!componenteActivo) return;
 
-      if (sessao?.access_token) {
-        setSessaoValida(true);
-        setAVerificarSessao(false);
-        setErro("");
+      // Não aceitar qualquer sessão como acesso MC: a validação
+      // de titularidade é feita depois de processar o link.
+      if (evento === "SIGNED_OUT") {
+        setSessaoValida(false);
       }
     });
 
@@ -63,116 +63,90 @@ export default function AlterarPasswordMCPage() {
       setAVerificarSessao(true);
       setErro("");
 
+      const endereco = new URL(window.location.href);
+      const codigo = endereco.searchParams.get("code");
+      const tokenHash = endereco.searchParams.get("token_hash");
+      const tipoLink = endereco.searchParams.get("type");
+      const fragmento = new URLSearchParams(
+        endereco.hash.startsWith("#")
+          ? endereco.hash.slice(1)
+          : endereco.hash,
+      );
+      const accessToken = fragmento.get("access_token");
+      const refreshToken = fragmento.get("refresh_token");
+
+      const linkRecuperacao =
+        Boolean(codigo) ||
+        Boolean(tokenHash && tipoLink === "recovery") ||
+        Boolean(accessToken && refreshToken);
+
       try {
-        // Primeiro aproveita uma sessão que o Supabase já tenha criado.
-        const { data: sessaoInicial, error: erroSessaoInicial } =
-          await supabase.auth.getSession();
-
-        if (erroSessaoInicial) {
-          throw erroSessaoInicial;
-        }
-
-        if (sessaoInicial.session?.access_token) {
-          if (componenteActivo) {
-            setSessaoValida(true);
-            setAVerificarSessao(false);
-            limparCredenciaisDoEndereco();
-          }
-
-          return;
-        }
-
-        const endereco = new URL(window.location.href);
-        const codigo = endereco.searchParams.get("code");
-        const tokenHash = endereco.searchParams.get("token_hash");
-        const tipoLink = endereco.searchParams.get("type");
-
-        // Alguns links usam o fluxo PKCE e chegam com ?code=...
+        // O link recebido tem prioridade sobre uma sessão de
+        // Suporte Regional ou de outra conta já aberta no navegador.
         if (codigo) {
-          const { error: erroTrocaCodigo } =
+          const { error } =
             await supabase.auth.exchangeCodeForSession(codigo);
-
-          if (erroTrocaCodigo) {
-            throw erroTrocaCodigo;
-          }
+          if (error) throw error;
         } else if (tokenHash && tipoLink === "recovery") {
-          // Outros links chegam com token_hash e type=recovery.
-          const { error: erroVerificacao } = await supabase.auth.verifyOtp({
+          const { error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: "recovery",
           });
-
-          if (erroVerificacao) {
-            throw erroVerificacao;
-          }
-        } else {
-          // O fluxo de recuperação do Supabase também pode enviar tokens no fragmento.
-          const fragmento = new URLSearchParams(
-            endereco.hash.startsWith("#")
-              ? endereco.hash.slice(1)
-              : endereco.hash,
-          );
-
-          const accessToken = fragmento.get("access_token");
-          const refreshToken = fragmento.get("refresh_token");
-
-          if (accessToken && refreshToken) {
-            const { error: erroDefinirSessao } =
-              await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken,
-              });
-
-            if (erroDefinirSessao) {
-              throw erroDefinirSessao;
-            }
-          }
+          if (error) throw error;
+        } else if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
         }
 
-        const { data: sessaoFinal, error: erroSessaoFinal } =
+        const { data: sessao, error: erroSessao } =
           await supabase.auth.getSession();
-
-        if (erroSessaoFinal) {
-          throw erroSessaoFinal;
+        if (erroSessao || !sessao.session?.access_token) {
+          throw new Error("O link não criou uma sessão válida.");
         }
 
-        const existeSessao = Boolean(sessaoFinal.session?.access_token);
+        const { data: utilizador, error: erroUtilizador } =
+          await supabase.auth.getUser();
+        if (erroUtilizador || !utilizador.user) {
+          throw new Error("Não foi possível validar o utilizador.");
+        }
+
+        // Uma conta pode acumular perfil MC e suporte regional.
+        // Exigir a associação efetiva ao MC, e não um rótulo único.
+        const { data: perfisMC, error: erroPerfil } = await supabase
+          .from("mcs")
+          .select("id")
+          .eq("auth_user_id", utilizador.user.id)
+          .eq("ativo", true)
+          .limit(1);
+
+        if (erroPerfil) {
+          throw new Error("Não foi possível verificar o acesso ao perfil.");
+        }
+        if (!perfisMC || perfisMC.length === 0) {
+          throw new Error(
+            "A sessão aberta não está associada ao teu perfil de MC. Abre a ligação de acesso da conta correta.",
+          );
+        }
 
         if (componenteActivo) {
-          setSessaoValida(existeSessao);
+          setSessaoValida(true);
           setAVerificarSessao(false);
-
-          if (existeSessao) {
-            setErro("");
-            limparCredenciaisDoEndereco();
-          } else {
-            setErro(
-              "O link não criou uma sessão válida. Pede um novo email de acesso.",
-            );
-          }
+          setErro("");
+          if (linkRecuperacao) limparCredenciaisDoEndereco();
         }
       } catch (falha) {
-        // Confirma novamente: o listener pode ter recebido a sessão entretanto.
-        const { data: sessaoDepoisDaFalha } =
-          await supabase.auth.getSession();
-
-        const existeSessao = Boolean(
-          sessaoDepoisDaFalha.session?.access_token,
-        );
-
         if (componenteActivo) {
-          setSessaoValida(existeSessao);
+          setSessaoValida(false);
           setAVerificarSessao(false);
-
-          if (existeSessao) {
-            setErro("");
-            limparCredenciaisDoEndereco();
-          } else {
-            console.error("Erro ao validar link de recuperação:", falha);
-            setErro(
-              "Não foi possível validar este link. Pede um novo email de acesso.",
-            );
-          }
+          setErro(
+            falha instanceof Error
+              ? falha.message
+              : "Não foi possível validar este link. Pede um novo email de acesso.",
+          );
+          if (linkRecuperacao) limparCredenciaisDoEndereco();
         }
       }
     }
