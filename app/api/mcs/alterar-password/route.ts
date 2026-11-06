@@ -84,14 +84,19 @@ export async function POST(request: NextRequest) {
       .eq("ativo", true)
       .maybeSingle();
 
-    if (erroPerfilMC || !perfilMC) {
+    const appMetadataAtual = utilizador.app_metadata ?? {};
+    const conviteSuporte =
+      appMetadataAtual.convite_suporte_pendente === true &&
+      Boolean(utilizador.email_confirmed_at);
+
+    // Para convites de suporte, confirmar a posse do email ANTES de
+    // permitir a criação de password. Não atribui função regional.
+    if (erroPerfilMC || (!perfilMC && !conviteSuporte)) {
       return responder(
         403,
-        "A sessão atual não está associada a um perfil de MC. Abre a ligação de acesso enviada para a tua conta de MC.",
+        "A sessão não está ligada a um MC ou a um convite IMIP válido. Solicita uma nova ligação ao Suporte Geral.",
       );
     }
-
-    const appMetadataAtual = utilizador.app_metadata ?? {};
 
     const { error: erroAtualizacao } =
       await supabaseAdmin.auth.admin.updateUserById(utilizador.id, {
@@ -99,6 +104,7 @@ export async function POST(request: NextRequest) {
         app_metadata: {
           ...appMetadataAtual,
           alterar_password_primeiro_acesso: false,
+          convite_suporte_pendente: false,
         },
       });
 
