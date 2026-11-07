@@ -560,7 +560,7 @@ export function processarMegazord(
     }
 
     const campeoesNaMesmaLinha = linha.match(
-      /^CAMPE[ÕO]ES?:\s*(.+)$/i,
+      /^CAMPE(?:ÃO|AO|ÕES|OES)\s*:\s*(.+)$/i,
     );
 
     if (campeoesNaMesmaLinha) {
@@ -582,7 +582,7 @@ export function processarMegazord(
       continue;
     }
 
-    if (/^CAMPE[ÕO]ES?:?$/i.test(linha)) {
+    if (/^CAMPE(?:ÃO|AO|ÕES|OES)\s*:?\s*$/i.test(linha)) {
       emCampeoes = true;
       emPermanencia = false;
       emVencedores = false;
