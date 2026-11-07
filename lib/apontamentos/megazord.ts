@@ -50,32 +50,30 @@ function normalizarTexto(texto: string): string {
 }
 
 function interpretarFase(linha: string): FaseEdicao | null {
+  // Aceita títulos escritos no telemóvel e copiados de documentos:
+  // "1ª FASE", "1.ª FASE", "2.ª FASE", "SEMIFINAIS", "SEMI-FINAIS".
   const texto = normalizarTexto(linha)
     .toUpperCase()
     .replace(/[ªº]/g, "")
-    .replace(/[:\_-]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/[.:_\\-–—]/g, " ")
+    .replace(/\\s+/g, " ")
     .trim();
 
-  if (/^PRE ?FASE$/.test(texto)) return "PRÉ-FASE";
+  if (/^PRE\\s*FASE$/.test(texto)) return "PRÉ-FASE";
 
-  if (/^(1|1A|PRIMEIRA) ?FASE$/.test(texto)) {
+  if (/^(?:1(?:\\s*A)?|PRIMEIRA)\\s*FASE$/.test(texto)) {
     return "1ª FASE";
   }
 
-  if (/^(2|2A|SEGUNDA) ?FASE$/.test(texto)) {
+  if (/^(?:2(?:\\s*A)?|SEGUNDA)\\s*FASE$/.test(texto)) {
     return "2ª FASE";
   }
 
-  if (
-    /^(SEMI ?FINAL|SEMIFINAL|MEIA ?FINAL|MEIAS ?FINAIS)$/.test(
-      texto,
-    )
-  ) {
+  if (/^(?:SEMI\\s*FINA(?:L|IS)|MEIA\\s*FINAL|MEIAS\\s*FINAIS)$/.test(texto)) {
     return "SEMI-FINAL";
   }
 
-  if (/^(FINAL|GRANDE ?FINAL)$/.test(texto)) {
+  if (/^(?:FINAL|GRANDE\\s*FINAL)$/.test(texto)) {
     return "FINAL";
   }
 
@@ -508,6 +506,7 @@ export function processarMegazord(
   let faseAtual: FaseEdicao = "1ª FASE";
   let emPermanencia = false;
   let emCampeoes = false;
+  let emVencedores = false;
 
   for (const linhaOriginal of linhas) {
     const linha = limparLinha(linhaOriginal);
@@ -523,12 +522,40 @@ export function processarMegazord(
       faseAtual = faseInterpretada;
       emPermanencia = false;
       emCampeoes = false;
+      emVencedores = false;
       continue;
     }
 
-    if (/^PERMAN[EÊ]NCIA:?$/i.test(linha)) {
+    // Aceitar também "Permanebcia", erro de escrita comum no apontamento.
+    const titulo = normalizarTexto(linha).replace(/[:.]$/, "").trim();
+    if (/^perman(?:en|eb|e)cia$/.test(titulo)) {
       emPermanencia = true;
       emCampeoes = false;
+      emVencedores = false;
+      continue;
+    }
+
+    // "Vencedores" pode ser uma anotação da equipa campeã, mas não
+    // substitui o resultado real da FINAL (5 contra 5, com placar).
+    if (/^VENCEDORES?:?$/i.test(linha)) {
+      emVencedores = true;
+      emPermanencia = false;
+      emCampeoes = false;
+      continue;
+    }
+
+    if (emVencedores) {
+      emVencedores = false;
+      const equipaIndicada = separarEquipa(linha, obterNomeOficial);
+      if (/\\b(?:vs|x)\\b/i.test(linha) || equipaIndicada.length !== 5) {
+        linhasIgnoradas.push(
+          `Vencedores: "${linha}". Indica apenas os cinco campeões nesta secção; a FINAL exige duas equipas de cinco com resultado (ex.: 2 vs 1).`,
+        );
+      } else {
+        equipaIndicada.forEach((nome) => {
+          registarNome(nomes, nome, normalizarNome);
+        });
+      }
       continue;
     }
 
@@ -539,6 +566,7 @@ export function processarMegazord(
     if (campeoesNaMesmaLinha) {
       emCampeoes = true;
       emPermanencia = false;
+      emVencedores = false;
 
       separarEquipa(
         campeoesNaMesmaLinha[1],
@@ -557,6 +585,7 @@ export function processarMegazord(
     if (/^CAMPE[ÕO]ES?:?$/i.test(linha)) {
       emCampeoes = true;
       emPermanencia = false;
+      emVencedores = false;
       continue;
     }
 
