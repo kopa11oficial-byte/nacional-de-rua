@@ -5,6 +5,7 @@ import { supabase } from "../../../lib/supabase";
 
 type ResultadoAlteracao = {
   sucesso?: boolean;
+  suporteAtivado?: boolean;
   erro?: string;
 };
 
@@ -43,6 +44,7 @@ export default function AlterarPasswordMCPage() {
   const [aGuardar, setAGuardar] = useState(false);
   const [concluido, setConcluido] = useState(false);
   const [conviteSuporte, setConviteSuporte] = useState(false);
+  const [suporteAtivado, setSuporteAtivado] = useState(false);
   const [erro, setErro] = useState("");
 
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function AlterarPasswordMCPage() {
 
       const linkRecuperacao =
         Boolean(codigo) ||
-        Boolean(tokenHash && tipoLink === "recovery") ||
+        Boolean(tokenHash && (tipoLink === "recovery" || tipoLink === "invite")) ||
         Boolean(accessToken && refreshToken);
 
       try {
@@ -88,10 +90,10 @@ export default function AlterarPasswordMCPage() {
           const { error } =
             await supabase.auth.exchangeCodeForSession(codigo);
           if (error) throw error;
-        } else if (tokenHash && tipoLink === "recovery") {
+        } else if (tokenHash && (tipoLink === "recovery" || tipoLink === "invite")) {
           const { error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
-            type: "recovery",
+            type: tipoLink === "invite" ? "invite" : "recovery",
           });
           if (error) throw error;
         } else if (accessToken && refreshToken) {
@@ -220,6 +222,7 @@ export default function AlterarPasswordMCPage() {
         );
       }
 
+      setSuporteAtivado(resultado.suporteAtivado === true);
       setConcluido(true);
       setPassword("");
       setConfirmacao("");
@@ -262,7 +265,7 @@ export default function AlterarPasswordMCPage() {
 
           <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base">
             {conviteSuporte
-              ? "Confirma o teu convite e define uma palavra-passe. O Suporte Geral atribuirá a região após esta ativação."
+              ? "Confirma o convite e define a tua palavra-passe. A função de suporte da tua região será ativada automaticamente nesta etapa."
               : "Define uma palavra-passe para proteger o acesso ao teu perfil."}
           </p>
 
@@ -280,9 +283,19 @@ export default function AlterarPasswordMCPage() {
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-200">
                 {conviteSuporte
-                  ? "A conta está ativada. Informa o Suporte Geral para atribuir a tua região. Ainda não tens permissões de suporte."
+                  ? (suporteAtivado
+                       ? "A tua conta de suporte está ativa. Já podes entrar na Central de Suporte IMIP."
+                       : "A palavra-passe foi guardada. Confirma o teu acesso com a equipa IMIP.")
                   : "A tua nova palavra-passe está guardada. Já podes aceder ao teu perfil de MC."}
               </p>
+              {conviteSuporte && suporteAtivado && (
+                <a
+                  href="/organizacao/suporte"
+                  className="mt-5 inline-flex min-h-12 items-center rounded-lg bg-emerald-400 px-5 py-3 text-sm font-black text-black"
+                >
+                  ENTRAR NA CENTRAL DE SUPORTE
+                </a>
+              )}
             </div>
           ) : !sessaoValida ? (
             <div
