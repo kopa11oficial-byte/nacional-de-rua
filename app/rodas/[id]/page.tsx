@@ -656,8 +656,16 @@ function FreeEmDestaque({
 const KLANDESTINA_RODA_ID = "c0e01a2d-b433-4bff-b627-cc37481921c3";
 
 const VIDEOS_EXEMPLO_KLANDESTINA = [
-  { id: "CDSJskBqGq0", titulo: "Vídeo 01" },
-  { id: "0AhIrqEm_SY", titulo: "Vídeo 02" },
+  {
+    id: "CDSJskBqGq0",
+    titulo: "Campeões da Kuradoria Klandestina",
+    protagonistas: "FLAYS & VIZZY",
+  },
+  {
+    id: "0AhIrqEm_SY",
+    titulo: "Vencedor da 38.ª edição da Klandestina",
+    protagonistas: "FLAYS",
+  },
 ] as const;
 
 function VideoYoutubeKlandestina({
@@ -675,7 +683,7 @@ function VideoYoutubeKlandestina({
       <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-[#0b3825] via-black to-[#450c17]">
         {reproduzir ? (
           <iframe
-            title={`Vídeo ${indice} da Klandestina no YouTube`}
+            title={`${video.titulo} — ${video.protagonistas}`}
             src={`https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1`}
             className="absolute inset-0 h-full w-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -686,7 +694,7 @@ function VideoYoutubeKlandestina({
           <button
             type="button"
             onClick={() => setReproduzir(true)}
-            aria-label={`Reproduzir vídeo ${indice} da Klandestina`}
+            aria-label={`Reproduzir ${video.titulo} — ${video.protagonistas}`}
             className="group relative block h-full w-full"
           >
             <img
@@ -710,9 +718,12 @@ function VideoYoutubeKlandestina({
           <p className="text-[10px] font-black uppercase tracking-[0.17em] text-[#d6b56d]">
             KLANDESTINA · YOUTUBE
           </p>
-          <h3 className="mt-1 text-lg font-black uppercase text-white">
-            {video.titulo}
+          <h3 className="mt-2 break-words text-xl font-black uppercase leading-tight text-white sm:text-2xl">
+            {video.protagonistas}
           </h3>
+          <p className="mt-2 text-xs font-bold leading-relaxed text-zinc-300 sm:text-sm">
+            {video.titulo}
+          </p>
         </div>
         <a
           href={url}
