@@ -507,6 +507,30 @@ export function processarMegazord(
   let emPermanencia = false;
   let emCampeoes = false;
 
+  // Uma nota de vencedores pode indicar os cinco campeões seguidos
+  // de "vs [oponente]", sem placar. Nesse caso, a parte depois de
+  // "vs" é apenas contexto, nunca uma batalha pontuada.
+  function registarAnotacaoCampeoes(anotacao: string): void {
+    const partes = anotacao.split(/\s+(?:vs|x)\s+/i);
+    if (partes.length > 2 || (partes.length === 2 && !partes[1].trim())) {
+      linhasIgnoradas.push(
+        `Campeões: "${anotacao}" — indicação ambígua. Identifica os cinco MCs vencedores.`,
+      );
+      return;
+    }
+
+    const campeoesIndicados = separarEquipa(partes[0], obterNomeOficial);
+    if (campeoesIndicados.length !== 5) {
+      linhasIgnoradas.push(
+        `Campeões: "${anotacao}" — o Megazord precisa dos cinco nomes da equipa campeã.`,
+      );
+      return;
+    }
+    campeoesIndicados.forEach((nome) => {
+      registarNome(nomes, nome, normalizarNome);
+    });
+  }
+
   for (const linhaOriginal of linhas) {
     const linha = limparLinha(linhaOriginal);
 
@@ -544,17 +568,7 @@ export function processarMegazord(
       emPermanencia = false;
 
       if (anotacaoCampeoes[1]) {
-        // Não confundir uma nota de campeões com uma batalha da FINAL.
-        // A FINAL, e os pontos respetivos, exigem placar próprio.
-        if (/\b(?:vs|x)\b/i.test(anotacaoCampeoes[1])) {
-          linhasIgnoradas.push(
-            `Campeões: "${anotacaoCampeoes[1]}". A FINAL exige duas equipas de cinco e um resultado (ex.: 2 vs 1).`,
-          );
-        } else {
-          separarEquipa(anotacaoCampeoes[1], obterNomeOficial).forEach((nome) => {
-            registarNome(nomes, nome, normalizarNome);
-          });
-        }
+        registarAnotacaoCampeoes(anotacaoCampeoes[1]);
         emCampeoes = false;
       }
       continue;
@@ -571,18 +585,8 @@ export function processarMegazord(
     }
 
     if (emCampeoes) {
-      // A linha seguinte ao título identifica os campeões,
-      // independentemente da palavra escolhida para o título.
       emCampeoes = false;
-      if (/\b(?:vs|x)\b/i.test(linha)) {
-        linhasIgnoradas.push(
-          `Campeões: "${linha}". A FINAL exige duas equipas de cinco e um resultado (ex.: 2 vs 1).`,
-        );
-      } else {
-        separarEquipa(linha, obterNomeOficial).forEach((nome) => {
-          registarNome(nomes, nome, normalizarNome);
-        });
-      }
+      registarAnotacaoCampeoes(linha);
       continue;
     }
 
