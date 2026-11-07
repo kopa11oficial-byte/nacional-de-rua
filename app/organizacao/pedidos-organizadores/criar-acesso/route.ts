@@ -491,12 +491,17 @@ export async function POST(
       const contaAntigaId = origem.auth_user_id;
 
       if (contaAntigaId) {
-        const [contaAntigaResposta, organizacoesResposta, mcsResposta] =
-          await Promise.all([
-            admin.auth.admin.getUserById(contaAntigaId),
-            admin.from("organizacoes").select("id").eq("auth_user_id", contaAntigaId),
-            admin.from("mcs").select("id").eq("auth_user_id", contaAntigaId).limit(1),
-          ]);
+        const [
+          contaAntigaResposta, organizacoesResposta, mcsResposta,
+          administradoresResposta, suportesResposta, regionaisResposta,
+        ] = await Promise.all([
+          admin.auth.admin.getUserById(contaAntigaId),
+          admin.from("organizacoes").select("id").eq("auth_user_id", contaAntigaId),
+          admin.from("mcs").select("id").eq("auth_user_id", contaAntigaId).limit(1),
+          admin.from("administradores").select("auth_user_id").eq("auth_user_id", contaAntigaId).limit(1),
+          admin.from("suportes_imip").select("auth_user_id").eq("auth_user_id", contaAntigaId).limit(1),
+          admin.from("suportes_regionais_imip").select("auth_user_id").eq("auth_user_id", contaAntigaId).limit(1),
+        ]);
 
         const contaAntiga = contaAntigaResposta.data.user;
         if (
@@ -507,7 +512,10 @@ export async function POST(
           organizacoesResposta.error ||
           organizacoesResposta.data?.length !== 1 ||
           organizacoesResposta.data[0].id !== orgId ||
-          mcsResposta.error || (mcsResposta.data?.length ?? 0) > 0
+          mcsResposta.error || (mcsResposta.data?.length ?? 0) > 0 ||
+          administradoresResposta.error || (administradoresResposta.data?.length ?? 0) > 0 ||
+          suportesResposta.error || (suportesResposta.data?.length ?? 0) > 0 ||
+          regionaisResposta.error || (regionaisResposta.data?.length ?? 0) > 0
         ) {
           return responder(
             409,
