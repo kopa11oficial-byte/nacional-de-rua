@@ -32,6 +32,16 @@ export default function LoginOrganizacaoPage() {
   const [loading, setLoading] = useState(false);
   const [aVerificar, setAVerificar] = useState(true);
 
+  // Um MC pode ser também suporte. Se a sessão tiver esse papel,
+  // abrir diretamente a Central de Suporte, sem exigir organização.
+  async function destinoDepoisDoLogin(): Promise<string> {
+    const { data: podeAceder, error } =
+      await supabase.rpc("tem_acesso_central_imip");
+    return !error && podeAceder === true
+      ? "/organizacao/suporte"
+      : "/organizacao";
+  }
+
   /*
     ============================================
     VERIFICAR SESSÃO
@@ -64,7 +74,7 @@ export default function LoginOrganizacaoPage() {
                 "/organizacao/login",
               );
 
-              router.replace("/organizacao");
+              router.replace(await destinoDepoisDoLogin());
               return;
             }
           }
@@ -75,7 +85,7 @@ export default function LoginOrganizacaoPage() {
         } = await supabase.auth.getSession();
 
         if (session) {
-          router.replace("/organizacao");
+          router.replace(await destinoDepoisDoLogin());
           return;
         }
       } catch (error) {
@@ -134,7 +144,7 @@ export default function LoginOrganizacaoPage() {
         return;
       }
 
-      router.replace("/organizacao");
+      router.replace(await destinoDepoisDoLogin());
     } catch (error) {
       console.error(
         "Erro ao iniciar sessão:",
