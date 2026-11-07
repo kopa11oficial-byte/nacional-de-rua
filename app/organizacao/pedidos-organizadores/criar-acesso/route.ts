@@ -13,6 +13,8 @@ type Pedido = {
   organizacao_id: string;
   roda_id: string;
   email: string;
+  nome_solicitante: string;
+  telefone: string | null;
   estado: "pendente" | "aprovado" | "recusado";
 };
 
@@ -256,7 +258,7 @@ export async function POST(
     } = await admin
       .from("pedidos_acesso_organizacoes")
       .select(
-        "id,organizacao_id,roda_id,email,estado",
+        "id,organizacao_id,roda_id,email,nome_solicitante,telefone,estado",
       )
       .eq("id", corpo.pedidoId)
       .maybeSingle();
@@ -468,10 +470,162 @@ export async function POST(
     } = await admin
       .from("organizacoes")
       .select(
-        "id,nome,ativa,auth_user_id",
+        "id,nome,email,ativa,auth_user_id",
       )
       .eq("id", roda.organizacao_id)
       .maybeSingle();
+
+    // ==========================================
+    // TROCA DE RESPONSÁVEL DE ORGANIZAÇÃO JÁ ATIVA
+    // ==========================================
+    // Não transferir ou apagar a roda, edições, pontos ou resultados.
+    // A mesma organização conserva o ID; é apenas a conta que muda.
+    if (
+      !erroOrigem && origem &&
+      origem.nome !== "RODAS EM ESPERA" &&
+      origem.id === pedido.organizacao_id &&
+      origem.ativa === true &&
+      origem.email?.trim().toLowerCase() === email
+    ) {
+      const orgId = origem.id;
+      const contaAntigaId = origem.auth_user_id;
+
+      if (contaAntigaId) {
+        const [contaAntigaResposta, organizacoesResposta, mcsResposta] =
+          await Promise.all([
+            admin.auth.admin.getUserById(contaAntigaId),
+            admin.from("organizacoes").select("id").eq("auth_user_id", contaAntigaId),
+            admin.from("mcs").select("id").eq("auth_user_id", contaAntigaId).limit(1),
+          ]);
+
+        const contaAntiga = contaAntigaResposta.data.user;
+        if (
+          contaAntigaResposta.error || !contaAntiga ||
+          contaAntiga.email?.trim().toLowerCase() !== email ||
+          contaAntiga.app_metadata?.tipo_acesso !== "organizacao" ||
+          contaAntiga.user_metadata?.organizacao_id !== orgId ||
+          organizacoesResposta.error ||
+          organizacoesResposta.data?.length !== 1 ||
+          organizacoesResposta.data[0].id !== orgId ||
+          mcsResposta.error || (mcsResposta.data?.length ?? 0) > 0
+        ) {
+          return responder(
+            409,
+            "A conta antiga tem associações inconsistentes. O Suporte Geral deve rever o acesso antes de o substituir.",
+          );
+        }
+
+        // Retirar primeiro as permissões da conta anterior, mesmo que
+        // um token de sessão ainda não tenha expirado.
+        const { data: desligada, error: erroDesligar } = await admin
+          .from("organizacoes")
+          .update({ auth_user_id: null })
+          .eq("id", orgId)
+          .eq("auth_user_id", contaAntigaId)
+          .select("id")
+          .maybeSingle();
+
+        if (erroDesligar || desligada?.id !== orgId) {
+          return responder(409, "Não foi possível desligar o acesso antigo. Nada foi alterado.");
+        }
+
+        // Apaga a identidade antiga através da API administrativa do
+        // Supabase Auth, não através de DELETE nas tabelas internas.
+        const { error: erroEliminarConta } = await admin.auth.admin.deleteUser(contaAntigaId);
+
+        if (erroEliminarConta) {
+          console.error("Erro ao remover antiga conta da organização:", erroEliminarConta);
+          const { error: erroReposicao } = await admin
+            .from("organizacoes")
+            .update({ auth_user_id: contaAntigaId })
+            .eq("id", orgId)
+            .is("auth_user_id", null);
+
+          return responder(
+            500,
+            erroReposicao
+              ? "A antiga conta ficou desligada, mas não pôde ser eliminada. Pede revisão ao Suporte Geral."
+              : "Não foi possível eliminar a antiga conta. A associação anterior foi restaurada.",
+          );
+        }
+      }
+
+      // Nas novas tentativas de um processo interrompido, a organização
+      // pode já estar sem responsável. O email do pedido mantém-se igual.
+      const { data: novaConta, error: erroCriacao } =
+        await admin.auth.admin.createUser({
+          email,
+          password: criarPasswordInterna(),
+          email_confirm: true,
+          app_metadata: { tipo_acesso: "organizacao" },
+          user_metadata: {
+            organizacao_id: orgId,
+            nome_organizacao: origem.nome,
+            nome_responsavel: pedido.nome_solicitante,
+          },
+        });
+
+      if (erroCriacao || !novaConta.user) {
+        console.error("Erro ao criar conta da nova responsável:", erroCriacao);
+        return responder(
+          409,
+          "O acesso anterior foi desligado. Não foi possível criar a conta nova; verifica se o email ainda existe no Auth e volta a aprovar.",
+        );
+      }
+
+      const { data: confirmada, error: erroTroca } = await admin.rpc(
+        "aprovar_substituicao_responsavel_organizacao",
+        {
+          p_pedido_id: pedido.id,
+          p_organizacao_id: orgId,
+          p_novo_auth_user_id: novaConta.user.id,
+          p_administrador_id: utilizador.id,
+        },
+      );
+
+      if (erroTroca || confirmada !== orgId) {
+        console.error("Erro na substituição da organização:", erroTroca);
+
+        const [estadoOrg, estadoPedido] = await Promise.all([
+          admin.from("organizacoes").select("auth_user_id").eq("id", orgId).maybeSingle(),
+          admin.from("pedidos_acesso_organizacoes").select("estado").eq("id", pedido.id).maybeSingle(),
+        ]);
+
+        if (
+          !estadoOrg.error && !estadoPedido.error &&
+          estadoOrg.data?.auth_user_id === null &&
+          estadoPedido.data?.estado === "pendente"
+        ) {
+          await admin.auth.admin.deleteUser(novaConta.user.id);
+          return responder(
+            409,
+            "A substituição não foi concluída. A conta temporária foi limpa; podes voltar a aprovar.",
+          );
+        }
+
+        if (
+          estadoOrg.data?.auth_user_id !== novaConta.user.id ||
+          estadoPedido.data?.estado !== "aprovado"
+        ) {
+          return responder(500, "Estado da troca incerto. Não repitas a operação sem verificar o pedido.");
+        }
+      }
+
+      const { error: erroEnvio } = await admin.auth.resetPasswordForEmail(email, { redirectTo });
+      if (erroEnvio) {
+        console.error("Nova responsável aprovada, mas email falhou:", erroEnvio);
+        return responder(
+          502,
+          "A Ana foi aprovada e o acesso anterior removido, mas o email falhou. Atualiza a lista e usa REENVIAR EMAIL DE ACESSO.",
+        );
+      }
+
+      return respostaSucesso(origem.nome, email);
+    }
+
+    // ==========================================
+    // 5. CONFIRMAR RODAS EM ESPERA
+    // ==========================================
 
     if (
       erroOrigem ||
