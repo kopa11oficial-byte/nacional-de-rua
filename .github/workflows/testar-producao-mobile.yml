@@ -23,13 +23,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-      - name: Instalar dependências
-        run: npm ci
-      - name: Instalar Playwright apenas no ambiente de teste
-        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Instalar Playwright isoladamente sem alterar dependências do IMIP
+        run: |
+          mkdir -p .teste-navegador
+          npm install --prefix .teste-navegador --no-save --no-package-lock playwright@1.56.1
       - name: Preparar navegador Chromium
-        run: npx playwright install --with-deps chromium
+        run: ./.teste-navegador/node_modules/.bin/playwright install --with-deps chromium
       - name: Verificar rotas públicas na Cloudflare em Android e iPhone
         run: node scripts/testar-producao-mobile.mjs
       - name: Guardar capturas do site
