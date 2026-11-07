@@ -55,25 +55,25 @@ function interpretarFase(linha: string): FaseEdicao | null {
   const texto = normalizarTexto(linha)
     .toUpperCase()
     .replace(/[ªº]/g, "")
-    .replace(/[.:_\\-–—]/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/[.:_\-–—]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 
-  if (/^PRE\\s*FASE$/.test(texto)) return "PRÉ-FASE";
+  if (/^PRE\s*FASE$/.test(texto)) return "PRÉ-FASE";
 
-  if (/^(?:1(?:\\s*A)?|PRIMEIRA)\\s*FASE$/.test(texto)) {
+  if (/^(?:1(?:\s*A)?|PRIMEIRA)\s*FASE$/.test(texto)) {
     return "1ª FASE";
   }
 
-  if (/^(?:2(?:\\s*A)?|SEGUNDA)\\s*FASE$/.test(texto)) {
+  if (/^(?:2(?:\s*A)?|SEGUNDA)\s*FASE$/.test(texto)) {
     return "2ª FASE";
   }
 
-  if (/^(?:SEMI\\s*FINA(?:L|IS)|MEIA\\s*FINAL|MEIAS\\s*FINAIS)$/.test(texto)) {
+  if (/^(?:SEMI\s*FINA(?:L|IS)|MEIA\s*FINAL|MEIAS\s*FINAIS)$/.test(texto)) {
     return "SEMI-FINAL";
   }
 
-  if (/^(?:FINAL|GRANDE\\s*FINAL)$/.test(texto)) {
+  if (/^(?:FINAL|GRANDE\s*FINAL)$/.test(texto)) {
     return "FINAL";
   }
 
@@ -547,7 +547,7 @@ export function processarMegazord(
     if (emVencedores) {
       emVencedores = false;
       const equipaIndicada = separarEquipa(linha, obterNomeOficial);
-      if (/\\b(?:vs|x)\\b/i.test(linha) || equipaIndicada.length !== 5) {
+      if (/\b(?:vs|x)\b/i.test(linha) || equipaIndicada.length !== 5) {
         linhasIgnoradas.push(
           `Vencedores: "${linha}". Indica apenas os cinco campeões nesta secção; a FINAL exige duas equipas de cinco com resultado (ex.: 2 vs 1).`,
         );
