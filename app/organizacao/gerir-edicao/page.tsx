@@ -1624,7 +1624,7 @@ export default function GerirEdicaoPage() {
 
         {!loading && !erro && (
           <GestaoCortesInstagram edicoes={edicoes} />
-        )
+        )}
 
         {/* INFORMAÇÃO COMPLEMENTAR */}
 
