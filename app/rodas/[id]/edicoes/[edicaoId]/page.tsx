@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { consultarTodas } from "@/lib/consultar-todas";
+import { nomePublicoEdicao } from "@/lib/edicoes/nomes-publicos";
 
 type Edicao = {
   id: string;
@@ -49,6 +50,14 @@ type Linha = {
   pontos: number;
   vitorias20: number;
 };
+
+function semanaDoAno(data: string): number {
+  const atual = new Date(`${data}T12:00:00`);
+  const dia = atual.getUTCDay() || 7;
+  atual.setUTCDate(atual.getUTCDate() + 4 - dia);
+  const inicio = new Date(Date.UTC(atual.getUTCFullYear(), 0, 1));
+  return Math.ceil(((atual.getTime() - inicio.getTime()) / 86400000 + 1) / 7);
+}
 
 export default function ResultadosEdicaoPage() {
   const { id: rodaId, edicaoId } = useParams<{
@@ -119,12 +128,6 @@ export default function ResultadosEdicaoPage() {
 
         if (erroRoda) {
           throw new Error("Não foi possível carregar a roda.");
-        }
-
-        if (pontos.length === 0) {
-          throw new Error(
-            "Os resultados desta edição ainda não foram confirmados.",
-          );
         }
 
         setNomeRoda(roda?.nome ?? "Roda");
@@ -268,8 +271,14 @@ export default function ResultadosEdicaoPage() {
           </p>
 
           <h1 className="mt-3 break-words text-4xl font-black leading-[0.95] tracking-[-0.04em] text-white drop-shadow-[3px_4px_0_#000] sm:text-5xl md:text-6xl">
-            {edicao?.nome ?? "RESULTADOS DA EDIÇÃO"}
+            {edicao ? nomePublicoEdicao(edicao.nome, nomeRoda) : "RESULTADOS DA EDIÇÃO"}
           </h1>
+
+          {edicao && nomePublicoEdicao(edicao.nome, nomeRoda) !== edicao.nome && (
+            <p className="mt-3 break-words text-base font-semibold text-[#e7c56f]">
+              {edicao.nome}
+            </p>
+          )}
 
           {edicao && (
             <p className="mt-4 text-sm text-zinc-200">
@@ -286,6 +295,7 @@ export default function ResultadosEdicaoPage() {
               {edicao.numero_edicao != null
                 ? ` · ${edicao.numero_edicao}.ª edição`
                 : ""}
+              {` · Semana ${semanaDoAno(edicao.data_edicao)}`}
             </p>
           )}
         </header>
@@ -297,6 +307,11 @@ export default function ResultadosEdicaoPage() {
         ) : erro ? (
           <p className="mt-10 rounded-md border border-red-800 bg-black/85 p-5 text-red-300">
             {erro}
+          </p>
+        ) : pontuacoes.length === 0 ? (
+          <p className="mt-10 border border-[#d6b56d]/40 bg-black/80 p-6 text-sm text-zinc-200">
+            Os resultados desta edição ainda não foram confirmados.
+            A data, o nome histórico, a temporada e a semana encontram-se acima.
           </p>
         ) : (
           <>
