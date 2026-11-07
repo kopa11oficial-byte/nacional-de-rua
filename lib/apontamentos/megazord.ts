@@ -506,7 +506,6 @@ export function processarMegazord(
   let faseAtual: FaseEdicao = "1ª FASE";
   let emPermanencia = false;
   let emCampeoes = false;
-  let emVencedores = false;
 
   for (const linhaOriginal of linhas) {
     const linha = limparLinha(linhaOriginal);
@@ -522,7 +521,6 @@ export function processarMegazord(
       faseAtual = faseInterpretada;
       emPermanencia = false;
       emCampeoes = false;
-      emVencedores = false;
       continue;
     }
 
@@ -531,61 +529,34 @@ export function processarMegazord(
     if (/^perman(?:en|eb|e)cia$/.test(titulo)) {
       emPermanencia = true;
       emCampeoes = false;
-      emVencedores = false;
       continue;
     }
 
-    // "Vencedores" pode ser uma anotação da equipa campeã, mas não
-    // substitui o resultado real da FINAL (5 contra 5, com placar).
-    if (/^VENCEDORES?:?$/i.test(linha)) {
-      emVencedores = true;
-      emPermanencia = false;
-      emCampeoes = false;
-      continue;
-    }
-
-    if (emVencedores) {
-      emVencedores = false;
-      const equipaIndicada = separarEquipa(linha, obterNomeOficial);
-      if (/\b(?:vs|x)\b/i.test(linha) || equipaIndicada.length !== 5) {
-        linhasIgnoradas.push(
-          `Vencedores: "${linha}". Indica apenas os cinco campeões nesta secção; a FINAL exige duas equipas de cinco com resultado (ex.: 2 vs 1).`,
-        );
-      } else {
-        equipaIndicada.forEach((nome) => {
-          registarNome(nomes, nome, normalizarNome);
-        });
-      }
-      continue;
-    }
-
-    const campeoesNaMesmaLinha = linha.match(
-      /^CAMPE(?:ÃO|AO|ÕES|OES)\s*:\s*(.+)$/i,
+    // Todos os rótulos indicam os mesmos campeões da edição,
+    // com ou sem acentos e no singular/plural. Podem aparecer
+    // sozinhos ou com os cinco nomes na mesma linha.
+    const anotacaoCampeoes = linha.match(
+      /^(?:CAMPE[ÃA]O|CAMPE[ÕO]ES|VENCEDORES?)(?=\\s|:|$)\\s*:?\\s*(.*)$/i,
     );
 
-    if (campeoesNaMesmaLinha) {
+    if (anotacaoCampeoes) {
       emCampeoes = true;
       emPermanencia = false;
-      emVencedores = false;
 
-      separarEquipa(
-        campeoesNaMesmaLinha[1],
-        obterNomeOficial,
-      ).forEach((nome) => {
-        registarNome(
-          nomes,
-          nome,
-          normalizarNome,
-        );
-      });
-
-      continue;
-    }
-
-    if (/^CAMPE(?:ÃO|AO|ÕES|OES)\s*:?\s*$/i.test(linha)) {
-      emCampeoes = true;
-      emPermanencia = false;
-      emVencedores = false;
+      if (anotacaoCampeoes[1]) {
+        // Não confundir uma nota de campeões com uma batalha da FINAL.
+        // A FINAL, e os pontos respetivos, exigem placar próprio.
+        if (/\\b(?:vs|x)\\b/i.test(anotacaoCampeoes[1])) {
+          linhasIgnoradas.push(
+            `Campeões: "${anotacaoCampeoes[1]}". A FINAL exige duas equipas de cinco e um resultado (ex.: 2 vs 1).`,
+          );
+        } else {
+          separarEquipa(anotacaoCampeoes[1], obterNomeOficial).forEach((nome) => {
+            registarNome(nomes, nome, normalizarNome);
+          });
+        }
+        emCampeoes = false;
+      }
       continue;
     }
 
@@ -600,17 +571,18 @@ export function processarMegazord(
     }
 
     if (emCampeoes) {
-      separarEquipa(
-        linha,
-        obterNomeOficial,
-      ).forEach((nome) => {
-        registarNome(
-          nomes,
-          nome,
-          normalizarNome,
+      // A linha seguinte ao título identifica os campeões,
+      // independentemente da palavra escolhida para o título.
+      emCampeoes = false;
+      if (/\\b(?:vs|x)\\b/i.test(linha)) {
+        linhasIgnoradas.push(
+          `Campeões: "${linha}". A FINAL exige duas equipas de cinco e um resultado (ex.: 2 vs 1).`,
         );
-      });
-
+      } else {
+        separarEquipa(linha, obterNomeOficial).forEach((nome) => {
+          registarNome(nomes, nome, normalizarNome);
+        });
+      }
       continue;
     }
 
