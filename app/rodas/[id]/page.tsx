@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { consultarTodas } from "@/lib/consultar-todas";
 import { eRodaKlandestina, nomePublicoEdicao } from "@/lib/edicoes/nomes-publicos";
 import { PedirAcessoOrganizacao } from "./pedir-acesso-organizacao";
+import { GaleriaInstagramRoda } from "./galeria-instagram";
 import { boldIMIP, veneerIMIP } from "../../fonts/identidade";
 
 /* eslint-disable @next/next/no-img-element */
@@ -2864,34 +2865,8 @@ export default function RankingRodaPage() {
                 descricao="Um espaço dedicado aos acontecimentos, protagonistas e memórias desta roda."
               />
 
-              <div className="grid gap-4 md:grid-cols-2">
-                {/* FOTOGRAFIAS */}
-
-                <div className="relative flex min-h-60 flex-col justify-between overflow-hidden border border-[#d6b56d]/30 bg-gradient-to-br from-[#143727] via-[#0b1711] to-[#08100b] p-6 sm:p-8">
-                  <div
-                    aria-hidden="true"
-                    className="absolute -bottom-12 -right-10 h-44 w-44 rotate-12 border-[18px] border-[#d6b56d]/15"
-                  />
-
-                  <div className="relative">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b56d]">
-                      REGISTO FOTOGRÁFICO
-                    </p>
-
-                    <h3
-                      className={`${boldIMIP.className} mt-4 text-3xl font-bold uppercase text-white sm:text-4xl`}
-                    >
-                      FOTOGRAFIAS
-                    </h3>
-                  </div>
-
-                  <p className="relative mt-8 max-w-sm text-sm leading-7 text-zinc-300">
-                    A galeria fotográfica da
-                    roda está em preparação.
-                    Ainda não existem imagens
-                    disponibilizadas nesta secção.
-                  </p>
-                </div>
+              <div className="space-y-6">
+                <GaleriaInstagramRoda rodaId={rodaId} />
 
                 {/* VÍDEOS */}
 
