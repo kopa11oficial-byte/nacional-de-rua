@@ -1,6 +1,6 @@
 // Smoke test independente do deploy Cloudflare, com viewport Android/iPhone.
 // Não recolhe nem utiliza credenciais de MC, suporte ou organização.
-import { chromium, devices } from "playwright";
+import { chromium, devices } from "../.teste-navegador/node_modules/playwright/index.mjs";
 import { mkdir } from "node:fs/promises";
 
 const BASE = "https://nacional-de-rua.rodasdeimproviso.workers.dev";
