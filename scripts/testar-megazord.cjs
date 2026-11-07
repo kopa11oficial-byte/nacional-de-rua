@@ -73,13 +73,14 @@ assert.equal(completo.linhasIgnoradas.length, 0, completo.linhasIgnoradas.join("
 assert.equal(completo.permanencias.validas.length, 2);
 assert.match(completo.vencedorEdicao, /R7/);
 
-const incompleto = processar([
+const anotacaoSemPlacar = processar([
   ...inicio,
   "Vencedores",
   "R7, Gash, Chess, Guigox e Davy vs Ares",
 ]);
-assert.equal(incompleto.batalhas.length, 14);
-assert.ok(incompleto.linhasIgnoradas.some(x => x.includes("FINAL exige")));
+assert.equal(anotacaoSemPlacar.batalhas.length, 14);
+assert.equal(anotacaoSemPlacar.linhasIgnoradas.length, 0);
+assert.equal(anotacaoSemPlacar.vencedorEdicao, null, "Não inventar a batalha FINAL");
 
 // A mesma anotação de campeões é aceite com os seis títulos equivalentes.
 const titulosEquivalentes = [
@@ -112,8 +113,20 @@ for (const titulo of titulosEquivalentes) {
   assert.equal(inline.batalhas.length, 14);
 }
 
-// Anotações ambíguas não podem transformar uma final sem placar em pontuação.
-const campeaoAmbiguo = processar([...inicio, "CAMPEÃO", "R7, Gash, Chess, Guigox e Davy vs Ares"]);
-assert.ok(campeaoAmbiguo.linhasIgnoradas.some((linha) => linha.includes("FINAL exige")));
+// As notas com "vs Ares" identificam vencedores, não uma batalha pontuada.
+for (const titulo of titulosEquivalentes) {
+  const comAdversario = processar([
+    ...inicio,
+    titulo,
+    "R7, Gash, Chess, Guigox e Davy vs Ares",
+  ]);
+  assert.equal(comAdversario.linhasIgnoradas.length, 0, titulo);
+  assert.equal(comAdversario.batalhas.length, 14);
+  assert.equal(comAdversario.vencedorEdicao, null, "Não inventar pontos sem placar");
+}
 
-console.log("IMIP: Megazord reconhece 1.ª/2.ª, semifinais, final e permanência; rejeita final ambígua.");
+// Nomes em falta ou indicação de várias batalhas continuam a ser recusados.
+const campeaoAmbiguo = processar([...inicio, "CAMPEÃO", "R7, Gash vs Ares"]);
+assert.ok(campeaoAmbiguo.linhasIgnoradas.some((linha) => linha.includes("cinco nomes")));
+
+console.log("IMIP: Megazord reconhece quatro fases, seis nomes de campeão e notas vs adversário sem inventar pontos.");
