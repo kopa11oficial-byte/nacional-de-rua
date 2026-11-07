@@ -124,7 +124,7 @@ export default function SuportesFlutuantes() {
       {aberto && (
         <button
           type="button"
-          aria-label="Fechar Central de Apoio"
+          aria-label="Fechar Central de Suporte"
           onClick={fechar}
           className="fixed inset-0 z-[75] bg-black/50 xl:hidden"
         />
@@ -178,8 +178,8 @@ export default function SuportesFlutuantes() {
           onClick={alternarPainel}
           aria-label={
             aberto
-              ? "Fechar Central de Apoio IMIP"
-              : "Abrir Central de Apoio IMIP"
+              ? "Fechar Central de Suporte IMIP"
+              : "Abrir Central de Suporte IMIP"
           }
           aria-expanded={aberto}
           aria-controls="central-apoio-imip"
@@ -229,7 +229,7 @@ export default function SuportesFlutuantes() {
         </button>
 
         {/*
-          CENTRAL DE APOIO
+          CENTRAL DE SUPORTE
 
           As cinco mascotes originais
           aparecem aqui dentro.
@@ -237,7 +237,7 @@ export default function SuportesFlutuantes() {
 
         <aside
           id="central-apoio-imip"
-          aria-label="Central de Apoio IMIP"
+          aria-label="Central de Suporte IMIP"
           aria-hidden={!aberto}
           inert={!aberto}
           className={
@@ -269,7 +269,7 @@ export default function SuportesFlutuantes() {
                       "'Gagalin', Impact, 'Arial Narrow', sans-serif",
                   }}
                 >
-                  CENTRAL DE APOIO
+                  CENTRAL DE SUPORTE
                 </h2>
 
                 <p className="mt-2 text-xs leading-relaxed text-zinc-400">
