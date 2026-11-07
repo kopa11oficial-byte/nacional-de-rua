@@ -81,4 +81,39 @@ const incompleto = processar([
 assert.equal(incompleto.batalhas.length, 14);
 assert.ok(incompleto.linhasIgnoradas.some(x => x.includes("FINAL exige")));
 
+// A mesma anotação de campeões é aceite com os seis títulos equivalentes.
+const titulosEquivalentes = [
+  "CAMPEÃO",
+  "CAMPEAO",
+  "CAMPEÕES",
+  "CAMPEOES",
+  "VENCEDOR",
+  "VENCEDORES",
+];
+for (const titulo of titulosEquivalentes) {
+  const separadamente = processar([
+    ...inicio,
+    titulo,
+    "R7, Gash, Chess, Guigox, Davy",
+  ]);
+  assert.equal(
+    separadamente.linhasIgnoradas.length,
+    0,
+    `${titulo}: ${separadamente.linhasIgnoradas.join(" | ")}`,
+  );
+  assert.equal(separadamente.batalhas.length, 14);
+  assert.equal(separadamente.vencedorEdicao, null, "A anotação não inventa a FINAL");
+
+  const inline = processar([
+    ...inicio,
+    `${titulo}: R7, Gash, Chess, Guigox, Davy`,
+  ]);
+  assert.equal(inline.linhasIgnoradas.length, 0, `${titulo}: ${inline.linhasIgnoradas.join(" | ")}`);
+  assert.equal(inline.batalhas.length, 14);
+}
+
+// Anotações ambíguas não podem transformar uma final sem placar em pontuação.
+const campeaoAmbiguo = processar([...inicio, "CAMPEÃO", "R7, Gash, Chess, Guigox e Davy vs Ares"]);
+assert.ok(campeaoAmbiguo.linhasIgnoradas.some((linha) => linha.includes("FINAL exige")));
+
 console.log("IMIP: Megazord reconhece 1.ª/2.ª, semifinais, final e permanência; rejeita final ambígua.");
