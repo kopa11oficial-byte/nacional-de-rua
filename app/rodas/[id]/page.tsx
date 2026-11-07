@@ -670,10 +670,8 @@ const VIDEOS_EXEMPLO_KLANDESTINA = [
 
 function VideoYoutubeKlandestina({
   video,
-  indice,
 }: {
   video: (typeof VIDEOS_EXEMPLO_KLANDESTINA)[number];
-  indice: number;
 }) {
   const [reproduzir, setReproduzir] = useState(false);
   const url = `https://www.youtube.com/watch?v=${video.id}`;
@@ -2201,11 +2199,10 @@ export default function RankingRodaPage() {
                     </span>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {VIDEOS_EXEMPLO_KLANDESTINA.map((video, indice) => (
+                    {VIDEOS_EXEMPLO_KLANDESTINA.map((video) => (
                       <VideoYoutubeKlandestina
                         key={video.id}
                         video={video}
-                        indice={indice + 1}
                       />
                     ))}
                   </div>
