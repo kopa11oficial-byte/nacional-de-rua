@@ -37,10 +37,6 @@ export default function CentralComunicacaoImip() {
   const [aAtribuir, setAAtribuir] = useState(false);
   const [erroAtribuicao, setErroAtribuicao] = useState("");
   const [sucessoAtribuicao, setSucessoAtribuicao] = useState("");
-  const [aConvidar, setAConvidar] = useState(false);
-  const [erroConvite, setErroConvite] = useState("");
-  const [ligacaoConvite, setLigacaoConvite] = useState("");
-  const [conviteCopiado, setConviteCopiado] = useState(false);
 
   const carregar = useCallback(async (uid: string, geral: boolean) => {
     const [respostaPropostas, respostaNotificacoes] = await Promise.all([
@@ -109,51 +105,10 @@ export default function CentralComunicacaoImip() {
     setSucessoAtribuicao("");
 
     try {
-      const { error } = await supabase.rpc("atribuir_suporte_regional_imip", {
-        p_email: emailMembro.trim(),
-        p_regiao: regiaoMembro,
-      });
-
-      if (error) {
-        const faltaConta = error.message.includes(
-          "A conta não existe ou ainda não confirmou o email",
-        );
-        setErroAtribuicao(
-          faltaConta
-            ? "Este email ainda não pertence a uma conta IMIP confirmada. É necessário criar e confirmar a conta antes de lhe atribuir funções de suporte. Nenhuma permissão foi concedida."
-            : "Não foi possível atribuir o suporte: " + error.message,
-        );
-      } else {
-        setSucessoAtribuicao("Responsável regional ativado com sucesso.");
-        setEmailMembro("");
-        await carregar(userId, true);
-      }
-    } catch {
-      setErroAtribuicao("Não foi possível comunicar com o serviço. Tenta novamente.");
-    } finally {
-      setAAtribuir(false);
-    }
-  }
-
-  async function convidar() {
-    if (aConvidar || aAtribuir) return;
-    setErroConvite("");
-    setLigacaoConvite("");
-    setConviteCopiado(false);
-
-    const email = emailMembro.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErroConvite("Indica um email válido antes de gerar o convite.");
-      return;
-    }
-
-    setAConvidar(true);
-    try {
-      const { data: sessao, error: erroSessao } =
-        await supabase.auth.getSession();
+      const { data: sessao, error: erroSessao } = await supabase.auth.getSession();
       const token = sessao.session?.access_token;
       if (erroSessao || !token) {
-        throw new Error("A sessão expirou. Entra novamente como Suporte Geral.");
+        throw new Error("A sessão expirou. Inicia sessão novamente.");
       }
 
       const resposta = await fetch("/organizacao/comunicacao/convidar", {
@@ -162,39 +117,29 @@ export default function CentralComunicacaoImip() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ email, regiao: regiaoMembro }),
+        body: JSON.stringify({ email: emailMembro.trim(), regiao: regiaoMembro }),
       });
       const dados = (await resposta.json()) as {
         sucesso?: boolean;
-        ligacao?: string;
+        tipo?: "ativo" | "convidado";
+        mensagem?: string;
         erro?: string;
       };
-      if (!resposta.ok || !dados.sucesso || !dados.ligacao) {
-        throw new Error(dados.erro ?? "Não foi possível gerar o convite.");
+      if (!resposta.ok || !dados.sucesso) {
+        throw new Error(dados.erro ?? "Não foi possível criar o suporte.");
       }
 
-      setLigacaoConvite(dados.ligacao);
-      setSucessoAtribuicao("");
-      setErroAtribuicao("");
+      setSucessoAtribuicao(
+        dados.mensagem ?? "Pedido de suporte processado com sucesso.",
+      );
+      setEmailMembro("");
+      await carregar(userId, true);
     } catch (falha) {
-      setErroConvite(
-        falha instanceof Error
-          ? falha.message
-          : "Não foi possível criar o convite.",
+      setErroAtribuicao(
+        falha instanceof Error ? falha.message : "Não foi possível comunicar com o serviço.",
       );
     } finally {
-      setAConvidar(false);
-    }
-  }
-
-  async function copiarConvite() {
-    if (!ligacaoConvite) return;
-    try {
-      await navigator.clipboard.writeText(ligacaoConvite);
-      setConviteCopiado(true);
-      setErroConvite("");
-    } catch {
-      setErroConvite("Não foi possível copiar automaticamente. Seleciona a ligação abaixo e copia-a.");
+      setAAtribuir(false);
     }
   }
 
@@ -292,7 +237,7 @@ export default function CentralComunicacaoImip() {
           {temAcesso && <section className="mt-9 border border-[#d6b56d]/40 bg-[#0e1a12] p-5 sm:p-7">
             <p className="text-xs font-black tracking-widest text-[#d6b56d]">EQUIPA DE SUPORTE IMIP</p>
             <h2 className="mt-2 text-xl font-black">ATRIBUIR RESPONSÁVEIS REGIONAIS</h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-300">Podes criar ou gerir responsáveis regionais. Atribuir um suporte exige uma conta IMIP com email confirmado e não altera os outros acessos da pessoa.</p>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-300">Insere o email e escolhe a região. Se a pessoa já tiver conta IMIP confirmada, o acesso de suporte é atribuído sem alterar a palavra-passe de MC. Se for nova, recebe automaticamente um convite para criar a palavra-passe e ativar o suporte.</p>
             <form onSubmit={atribuir} className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] lg:items-end">
               <label htmlFor="email-responsavel-regional" className="block min-w-0 text-sm font-bold text-[#f0e6d1]">
                 Email da conta IMIP
@@ -304,7 +249,7 @@ export default function CentralComunicacaoImip() {
                   required
                   placeholder="email@exemplo.pt"
                   value={emailMembro}
-                  onChange={e => { setEmailMembro(e.target.value); setErroAtribuicao(""); setLigacaoConvite(""); setErroConvite(""); }}
+                  onChange={e => { setEmailMembro(e.target.value); setErroAtribuicao(""); }}
                   className="mt-2 min-h-12 w-full min-w-0 rounded-md border border-white/25 bg-black px-3 py-3 text-base text-white outline-none focus:border-[#d6b56d]"
                 />
               </label>
@@ -313,62 +258,22 @@ export default function CentralComunicacaoImip() {
                 <select
                   id="regiao-responsavel-regional"
                   value={regiaoMembro}
-                  onChange={e => { setRegiaoMembro(e.target.value as RegiaoImip); setLigacaoConvite(""); setErroConvite(""); }}
+                  onChange={e => setRegiaoMembro(e.target.value as RegiaoImip)}
                   className="mt-2 min-h-12 w-full min-w-0 rounded-md border border-white/25 bg-black px-3 py-3 text-base text-white outline-none focus:border-[#d6b56d]"
                 >
                   {REGIOES_IMIP.map(r => <option key={r.id} value={r.id}>Suporte {r.nome}</option>)}
                 </select>
               </label>
               <button type="submit" disabled={aAtribuir} className="min-h-12 w-full rounded-md bg-[#d6b56d] px-6 py-3 text-sm font-black uppercase text-black disabled:opacity-50 lg:w-auto">
-                {aAtribuir ? "A ATRIBUIR..." : "ATRIBUIR SUPORTE"}
+                {aAtribuir ? "A PREPARAR ACESSO..." : "CRIAR / ATRIBUIR SUPORTE"}
               </button>
             </form>
-            <div className="mt-5 border-t border-[#d6b56d]/25 pt-5">
-              <p className="text-sm font-black uppercase tracking-wide text-[#d6b56d]">
-                O responsável ainda não tem conta IMIP?
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                Gera um convite de confirmação para o email e região indicados acima. O convite não concede permissões: só depois de ativar a conta poderás carregar em ATRIBUIR SUPORTE.
-              </p>
-              <button
-                type="button"
-                disabled={aConvidar || aAtribuir || !emailMembro.trim()}
-                onClick={() => void convidar()}
-                className="mt-4 min-h-12 w-full rounded-md border-2 border-[#d6b56d] bg-black px-5 py-3 text-sm font-black uppercase text-[#e8c76c] disabled:opacity-50 sm:w-auto"
-              >
-                {aConvidar ? "A GERAR CONVITE..." : "GERAR CONVITE PARA NOVA CONTA"}
-              </button>
-              {erroConvite && (
-                <p role="alert" className="mt-3 border-l-4 border-red-500 bg-red-950/40 p-4 text-sm text-red-100">
-                  {erroConvite}
-                </p>
-              )}
-              {ligacaoConvite && (
-                <div className="mt-4 space-y-3 rounded-md border border-[#d6b56d]/50 bg-black/70 p-4" role="status">
-                  <p className="text-sm font-black text-[#e8c76c]">
-                    Convite gerado para {emailMembro.trim()}
-                  </p>
-                  <p className="text-sm leading-relaxed text-zinc-200">
-                    Copia a ligação e envia-a <strong>em privado para o email indicado</strong>. Não a publiques em grupos. Depois da pessoa confirmar o email e definir a palavra-passe, volta a este formulário para atribuir a região.
-                  </p>
-                  <input
-                    type="text"
-                    readOnly
-                    aria-label="Ligação de convite privada"
-                    value={ligacaoConvite}
-                    onFocus={e => e.currentTarget.select()}
-                    className="min-h-12 w-full min-w-0 rounded-md border border-white/25 bg-[#101713] px-3 text-base text-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void copiarConvite()}
-                    className="min-h-12 w-full rounded-md bg-[#d6b56d] px-5 py-3 text-sm font-black uppercase text-black sm:w-auto"
-                  >
-                    {conviteCopiado ? "LIGAÇÃO COPIADA" : "COPIAR LIGAÇÃO"}
-                  </button>
-                </div>
-              )}
-            </div>
+            <p className="mt-4 text-xs leading-relaxed text-zinc-300">
+              Para novas contas, o convite é enviado pelo Supabase Auth. O envio
+              para emails externos requer SMTP configurado; se não estiver ativo,
+              será mostrado um erro e nenhuma permissão será atribuída.
+              Não é necessário copiar ligações nem voltar para atribuir o suporte.
+            </p>
             {erroAtribuicao && (
               <p role="alert" className="mt-4 border-l-4 border-red-500 bg-red-950/40 p-4 text-sm leading-relaxed text-red-100">
                 {erroAtribuicao}
