@@ -536,7 +536,7 @@ export function processarMegazord(
     // com ou sem acentos e no singular/plural. Podem aparecer
     // sozinhos ou com os cinco nomes na mesma linha.
     const anotacaoCampeoes = linha.match(
-      /^(?:CAMPE[ÃA]O|CAMPE[ÕO]ES|VENCEDORES?)(?=\\s|:|$)\\s*:?\\s*(.*)$/i,
+      /^(?:CAMPE[ÃA]O|CAMPE[ÕO]ES|VENCEDOR(?:ES)?)(?=\s|:|$)\s*:?\s*(.*)$/i,
     );
 
     if (anotacaoCampeoes) {
@@ -546,7 +546,7 @@ export function processarMegazord(
       if (anotacaoCampeoes[1]) {
         // Não confundir uma nota de campeões com uma batalha da FINAL.
         // A FINAL, e os pontos respetivos, exigem placar próprio.
-        if (/\\b(?:vs|x)\\b/i.test(anotacaoCampeoes[1])) {
+        if (/\b(?:vs|x)\b/i.test(anotacaoCampeoes[1])) {
           linhasIgnoradas.push(
             `Campeões: "${anotacaoCampeoes[1]}". A FINAL exige duas equipas de cinco e um resultado (ex.: 2 vs 1).`,
           );
@@ -574,7 +574,7 @@ export function processarMegazord(
       // A linha seguinte ao título identifica os campeões,
       // independentemente da palavra escolhida para o título.
       emCampeoes = false;
-      if (/\\b(?:vs|x)\\b/i.test(linha)) {
+      if (/\b(?:vs|x)\b/i.test(linha)) {
         linhasIgnoradas.push(
           `Campeões: "${linha}". A FINAL exige duas equipas de cinco e um resultado (ex.: 2 vs 1).`,
         );
