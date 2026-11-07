@@ -1,0 +1,41 @@
+name: Verificar site publicado e mobile
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/testar-producao-mobile.yml"
+      - "scripts/testar-producao-mobile.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  publicacao-mobile:
+    name: Cloudflare e ecrãs móveis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci
+      - name: Instalar Playwright apenas no ambiente de teste
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Preparar navegador Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verificar rotas públicas na Cloudflare em Android e iPhone
+        run: node scripts/testar-producao-mobile.mjs
+      - name: Guardar capturas do site
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: imip-mobile-cloudflare
+          path: artefactos-producao/*.png
+          if-no-files-found: ignore
