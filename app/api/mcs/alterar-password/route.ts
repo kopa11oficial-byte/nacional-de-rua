@@ -85,43 +85,87 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     const appMetadataAtual = utilizador.app_metadata ?? {};
+    const regioes = ["norte", "centro", "lisboa_margem_sul", "algarve"] as const;
+    const regiaoConvite = appMetadataAtual.convite_suporte_regiao;
+    const regiaoValida =
+      typeof regiaoConvite === "string" &&
+      regioes.some((regiao) => regiao === regiaoConvite);
     const conviteSuporte =
       appMetadataAtual.convite_suporte_pendente === true &&
-      Boolean(utilizador.email_confirmed_at);
+      regiaoValida &&
+      Boolean(utilizador.email_confirmed_at) &&
+      Boolean(utilizador.email);
 
-    // Para convites de suporte, confirmar a posse do email ANTES de
-    // permitir a criação de password. Não atribui função regional.
     if (erroPerfilMC || (!perfilMC && !conviteSuporte)) {
       return responder(
         403,
-        "A sessão não está ligada a um MC ou a um convite IMIP válido. Solicita uma nova ligação ao Suporte Geral.",
+        "A sessão não está ligada a um MC ou a um convite IMIP válido. Solicita uma nova ligação ao suporte.",
       );
     }
 
+    // Guardar primeiro a password. Se a operação falhar, o novo suporte
+    // permanece sem privilégios. Não remover ainda o convite pendente:
+    // assim a ativação pode ser repetida caso o passo seguinte falhe.
     const { error: erroAtualizacao } =
       await supabaseAdmin.auth.admin.updateUserById(utilizador.id, {
         password: corpo.password,
         app_metadata: {
           ...appMetadataAtual,
           alterar_password_primeiro_acesso: false,
-          convite_suporte_pendente: false,
         },
       });
 
     if (erroAtualizacao) {
-      console.error(
-        "Erro ao guardar a nova palavra-passe do MC:",
-        erroAtualizacao,
-      );
-
+      console.error("IMIP: erro ao definir palavra-passe.", erroAtualizacao.code);
       return responder(
         400,
         "Não foi possível guardar a palavra-passe. Confirma os requisitos e tenta novamente.",
       );
     }
 
+    if (conviteSuporte) {
+      // Só uma pessoa que recebeu o convite da equipa e confirmou o
+      // próprio email consegue chegar a este passo com a sua sessão.
+      const { error: erroAtivacao } = await supabaseAdmin
+        .from("suportes_regionais_imip")
+        .upsert(
+          {
+            auth_user_id: utilizador.id,
+            email_contacto: utilizador.email!,
+            regiao: regiaoConvite,
+            ativo: true,
+          },
+          { onConflict: "auth_user_id" },
+        );
+
+      if (erroAtivacao) {
+        console.error("IMIP: palavra-passe definida, mas falhou a ativação do suporte.", erroAtivacao.code);
+        return responder(
+          503,
+          "A palavra-passe foi guardada, mas o acesso de suporte não pôde ser ativado. Repete o processo com esta sessão ou contacta o suporte IMIP.",
+        );
+      }
+
+      // Só depois de ativar limpar o convite. Não alterar nem remover o
+      // perfil MC ou outras funções já existentes na mesma conta.
+      const { error: erroLimpeza } =
+        await supabaseAdmin.auth.admin.updateUserById(utilizador.id, {
+          app_metadata: {
+            ...appMetadataAtual,
+            alterar_password_primeiro_acesso: false,
+            convite_suporte_pendente: false,
+            convite_suporte_regiao: null,
+          },
+        });
+      if (erroLimpeza) {
+        // A função já foi ativada; reportar apenas no log para não
+        // induzir o utilizador a repetir a ativação com um novo convite.
+        console.error("IMIP: suporte ativo, mas não foi possível limpar o convite.", erroLimpeza.code);
+      }
+    }
+
     return NextResponse.json(
-      { sucesso: true },
+      { sucesso: true, suporteAtivado: conviteSuporte },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (erro) {
