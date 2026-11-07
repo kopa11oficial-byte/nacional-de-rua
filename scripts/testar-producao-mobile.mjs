@@ -34,6 +34,16 @@ for (const aparelho of [
         waitUntil: "domcontentloaded",
         timeout: 25_000,
       });
+      if (rota.nome === "klandestina-cortes") {
+        // Confirma a versão publicada e espera pelos dados da roda.
+        await pagina.locator("#cortes").waitFor({
+          state: "visible",
+          timeout: 20_000,
+        });
+        await pagina.locator("#cortes").getByText(
+          "CONCEPT — “NÃO FAÇO RIMAS PARA A TELEVISÃO”",
+        ).waitFor({ state: "visible", timeout: 15_000 });
+      }
       await pagina.waitForTimeout(900);
 
       const metrica = await pagina.evaluate(() => ({
