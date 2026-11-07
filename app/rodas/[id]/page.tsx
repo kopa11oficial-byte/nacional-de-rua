@@ -2851,7 +2851,7 @@ export default function RankingRodaPage() {
             </section>
 
             {/* =====================================
-                GALERIA E VÍDEOS
+                GALERIA FOTOGRÁFICA
                 ===================================== */}
 
             <section
@@ -2861,43 +2861,10 @@ export default function RankingRodaPage() {
               <TituloSecao
                 numero="05"
                 etiqueta="OS MOMENTOS DA RUA"
-                titulo="GALERIA & VÍDEOS"
-                descricao="Um espaço dedicado aos acontecimentos, protagonistas e memórias desta roda."
+                titulo="GALERIA FOTOGRÁFICA"
+                descricao="Toca numa fotografia para abrir a publicação original no Instagram da roda."
               />
-
-              <div className="space-y-6">
-                <GaleriaInstagramRoda rodaId={rodaId} />
-
-                {/* VÍDEOS */}
-
-                <div className="relative flex min-h-60 flex-col justify-between overflow-hidden border border-[#b82535]/35 bg-gradient-to-br from-[#32101b] via-[#150c10] to-[#090c0a] p-6 sm:p-8">
-                  <div
-                    aria-hidden="true"
-                    className="absolute -right-8 -top-12 h-44 w-44 rotate-12 border-[18px] border-[#b82535]/20"
-                  />
-
-                  <div className="relative">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#e7c56f]">
-                      BATALHAS E MELHORES MOMENTOS
-                    </p>
-
-                    <h3
-                      className={`${boldIMIP.className} mt-4 text-3xl font-bold uppercase text-white sm:text-4xl`}
-                    >
-                      VÍDEOS & CORTES
-                    </h3>
-                  </div>
-
-                  <p className="relative mt-8 max-w-sm text-sm leading-7 text-zinc-300">
-                    Este espaço receberá
-                    os vídeos e cortes
-                    das batalhas quando
-                    estiver disponível
-                    a gestão de conteúdos
-                    multimédia das rodas.
-                  </p>
-                </div>
-              </div>
+              <GaleriaInstagramRoda rodaId={rodaId} />
             </section>
           </>
         )}
