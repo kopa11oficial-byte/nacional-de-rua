@@ -15,6 +15,7 @@ import {
 } from "../../fonts/identidade";
 import { supabase } from "../../../lib/supabase";
 import { GestaoGaleriaInstagram } from "./galeria-instagram";
+import { GestaoCortesInstagram } from "./cortes-instagram";
 
 /*
   ==================================================
@@ -1620,6 +1621,10 @@ export default function GerirEdicaoPage() {
         {!loading && !erro && (
           <GestaoGaleriaInstagram edicoes={edicoes} />
         )}
+
+        {!loading && !erro && (
+          <GestaoCortesInstagram edicoes={edicoes} />
+        )
 
         {/* INFORMAÇÃO COMPLEMENTAR */}
 
