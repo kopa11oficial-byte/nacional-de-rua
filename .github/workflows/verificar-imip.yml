@@ -38,6 +38,8 @@ jobs:
         run: node scripts/testar-double-tri.cjs
       - name: Testar Megazord e progressão das quatro fases
         run: node scripts/testar-megazord.cjs
+      - name: Testar nomes curtos Klandestina
+        run: node scripts/testar-nomes-klandestina.cjs
       - name: Testar histórico de MCs sem pontos
         run: node scripts/testar-historico-mcs.cjs
       - name: Compilar Next.js
