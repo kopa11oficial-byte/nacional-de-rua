@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { consultarTodas } from "@/lib/consultar-todas";
+import { eRodaKlandestina, nomePublicoEdicao } from "@/lib/edicoes/nomes-publicos";
 import { PedirAcessoOrganizacao } from "./pedir-acesso-organizacao";
 import { boldIMIP, veneerIMIP } from "../../fonts/identidade";
 
@@ -1958,14 +1959,16 @@ export default function RankingRodaPage() {
                     {ultimaEdicao ? (
                       <>
                         <p className="mt-2 break-words text-base font-black text-white">
-                          {ultimaEdicao.nome}
+                          {nomePublicoEdicao(ultimaEdicao.nome, roda?.nome)}
                         </p>
 
+                        {!eRodaKlandestina(roda?.nome) && (
                         <p className="mt-2 text-xs text-zinc-300">
                           {formatarData(
                             ultimaEdicao.data_edicao,
                           )}
                         </p>
+                        )}
                       </>
                     ) : (
                       <p className="mt-2 text-sm text-zinc-300">
@@ -2579,10 +2582,11 @@ export default function RankingRodaPage() {
                   </p>
 
                   <p className="mt-2 break-words text-base font-black text-white">
-                    {ultimaEdicao.nome}
+                    {nomePublicoEdicao(ultimaEdicao.nome, roda?.nome)}
                   </p>
 
-                  <p className="mt-2 text-xs leading-relaxed text-zinc-300">
+                  {!eRodaKlandestina(roda?.nome) && (
+                    <p className="mt-2 text-xs leading-relaxed text-zinc-300">
                     {formatarData(
                       ultimaEdicao.data_edicao,
                     )}
@@ -2609,6 +2613,7 @@ export default function RankingRodaPage() {
                       </>
                     )}
                   </p>
+                    )}
                 </div>
               )}
 
@@ -2629,6 +2634,25 @@ export default function RankingRodaPage() {
                         confirmadas.has(
                           edicao.id,
                         );
+
+                      // A Klandestina apresenta apenas KL 34, KL 35, etc.
+                      // O nome histórico e os metadados ficam no interior da edição.
+                      if (eRodaKlandestina(roda?.nome)) {
+                        return (
+                          <Link
+                            key={edicao.id}
+                            href={`/rodas/${rodaId}/edicoes/${edicao.id}`}
+                            className={`flex min-h-20 items-center justify-between gap-4 border border-white/20 border-l-4 bg-black/65 px-5 py-4 transition hover:border-[#d6b56d] hover:bg-black/85 ${confirmada ? "border-l-[#087a43]" : "border-l-zinc-600"}`}
+                          >
+                            <span className="break-words text-xl font-black text-white sm:text-2xl">
+                              {nomePublicoEdicao(edicao.nome, roda?.nome)}
+                            </span>
+                            <span className="shrink-0 text-[11px] font-black uppercase tracking-wide text-[#d6b56d]">
+                              ABRIR EDIÇÃO ↗
+                            </span>
+                          </Link>
+                        );
+                      }
 
                       const conteudo = (
                         <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
