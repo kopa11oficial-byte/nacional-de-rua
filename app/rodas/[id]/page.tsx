@@ -8,6 +8,7 @@ import { consultarTodas } from "@/lib/consultar-todas";
 import { eRodaKlandestina, nomePublicoEdicao } from "@/lib/edicoes/nomes-publicos";
 import { PedirAcessoOrganizacao } from "./pedir-acesso-organizacao";
 import { GaleriaInstagramRoda } from "./galeria-instagram";
+import { CortesInstagramRoda } from "./cortes-instagram";
 import { boldIMIP, veneerIMIP } from "../../fonts/identidade";
 
 /* eslint-disable @next/next/no-img-element */
@@ -2068,7 +2069,7 @@ export default function RankingRodaPage() {
 
             <nav
               aria-label="Secções da roda"
-              className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+              className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"
             >
               {[
                 ["#identidade", "A RODA"],
@@ -2076,6 +2077,7 @@ export default function RankingRodaPage() {
                 ["#classificacao", "RANKING"],
                 ["#edicoes", "EDIÇÕES"],
                 ["#galeria", "GALERIA"],
+                ["#cortes", "VÍDEOS & CORTES"],
               ].map(([href, nome]) => (
                 <a
                   key={href}
@@ -2865,6 +2867,23 @@ export default function RankingRodaPage() {
                 descricao="Toca numa fotografia para abrir a publicação original no Instagram da roda."
               />
               <GaleriaInstagramRoda rodaId={rodaId} />
+            </section>
+
+            {/* =====================================
+                VÍDEOS E CORTES DAS RODAS
+                ===================================== */}
+
+            <section
+              id="cortes"
+              className="mt-10 scroll-mt-8 border border-[#d6b56d]/25 bg-black/90 p-5 sm:p-8"
+            >
+              <TituloSecao
+                numero="06"
+                etiqueta="BATALHAS E MELHORES MOMENTOS"
+                titulo="VÍDEOS & CORTES"
+                descricao="Cortes do Instagram das rodas. Toca num vídeo para abrir o Reel original."
+              />
+              <CortesInstagramRoda rodaId={rodaId} />
             </section>
           </>
         )}
