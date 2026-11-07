@@ -14,6 +14,7 @@ import {
   veneerIMIP,
 } from "../../fonts/identidade";
 import { supabase } from "../../../lib/supabase";
+import { GestaoGaleriaInstagram } from "./galeria-instagram";
 
 /*
   ==================================================
@@ -1614,6 +1615,10 @@ export default function GerirEdicaoPage() {
           <GestaoFreesCampeao
             edicoes={edicoes}
           />
+        )}
+
+        {!loading && !erro && (
+          <GestaoGaleriaInstagram edicoes={edicoes} />
         )}
 
         {/* INFORMAÇÃO COMPLEMENTAR */}
