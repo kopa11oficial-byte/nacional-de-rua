@@ -273,7 +273,7 @@ export default function PedidosAcessoOrganizacoesPage() {
 
     const pergunta =
       acao === "aprovar"
-        ? `Aprovar o acesso de "${pedido.nome_solicitante}" à roda "${rodaNome}"?\n\nA roda e as respetivas edições serão associadas à organização aprovada. Será solicitado o envio de um email para ${pedido.email}.`
+        ? `Aprovar o acesso de "${pedido.nome_solicitante}" à roda "${rodaNome}"?\n\nSe a organização já tiver um responsável, a conta anterior será substituída e deixará de ter acesso. A roda, as edições, os resultados e as pontuações serão preservados. Será enviado um email de ativação para ${pedido.email}.`
         : `Solicitar um novo email de acesso para ${pedido.email}?\n\nO sistema verificará primeiro se o acesso continua ativo.`;
 
     if (!window.confirm(pergunta)) return;
