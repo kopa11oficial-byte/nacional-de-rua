@@ -651,6 +651,82 @@ function FreeEmDestaque({
   );
 }
 
+// Vídeos partilhados para testar o aspeto da galeria da Klandestina.
+// São ligações do YouTube, sem upload e sem associação a um campeão.
+const KLANDESTINA_RODA_ID = "c0e01a2d-b433-4bff-b627-cc37481921c3";
+
+const VIDEOS_EXEMPLO_KLANDESTINA = [
+  { id: "CDSJskBqGq0", titulo: "Vídeo 01" },
+  { id: "0AhIrqEm_SY", titulo: "Vídeo 02" },
+] as const;
+
+function VideoYoutubeKlandestina({
+  video,
+  indice,
+}: {
+  video: (typeof VIDEOS_EXEMPLO_KLANDESTINA)[number];
+  indice: number;
+}) {
+  const [reproduzir, setReproduzir] = useState(false);
+  const url = `https://www.youtube.com/watch?v=${video.id}`;
+
+  return (
+    <article className="overflow-hidden border border-[#d6b56d]/35 bg-[#091b13] transition hover:border-[#d6b56d]">
+      <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-[#0b3825] via-black to-[#450c17]">
+        {reproduzir ? (
+          <iframe
+            title={`Vídeo ${indice} da Klandestina no YouTube`}
+            src={`https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1`}
+            className="absolute inset-0 h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setReproduzir(true)}
+            aria-label={`Reproduzir vídeo ${indice} da Klandestina`}
+            className="group relative block h-full w-full"
+          >
+            <img
+              src={`https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover opacity-75 transition duration-300 group-hover:scale-105 group-hover:opacity-95"
+            />
+            <span className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+            <span className="absolute left-1/2 top-1/2 flex h-[72px] w-[72px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#f0d58e] bg-black/70 pl-1 text-3xl text-white shadow-xl transition group-hover:scale-110">
+              ▶
+            </span>
+            <span className="absolute bottom-4 left-4 bg-black/85 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[#e7c56f]">
+              REPRODUZIR VÍDEO
+            </span>
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d6b56d]/30 px-4 py-4 sm:px-5">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.17em] text-[#d6b56d]">
+            KLANDESTINA · YOUTUBE
+          </p>
+          <h3 className="mt-1 text-lg font-black uppercase text-white">
+            {video.titulo}
+          </h3>
+        </div>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center border border-[#d6b56d]/55 px-3 py-2 text-xs font-black uppercase text-[#e7c56f] transition hover:bg-white/10"
+        >
+          VER NO YOUTUBE ↗
+        </a>
+      </div>
+    </article>
+  );
+}
+
 // ===================================================
 // PÁGINA PÚBLICA DA RODA
 // ===================================================
@@ -2098,6 +2174,33 @@ export default function RankingRodaPage() {
                 descricao="Os vídeos gravados pelos campeões desta roda, edição após edição."
               />
 
+              {rodaId === KLANDESTINA_RODA_ID && (
+                <div className="mb-8">
+                  <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#d6b56d]">
+                        TESTE VISUAL · VÍDEOS DA RODA
+                      </p>
+                      <h3 className={`${boldIMIP.className} mt-2 text-2xl font-bold uppercase text-[#f0e6d1] sm:text-3xl`}>
+                        KLANDESTINA NO YOUTUBE
+                      </h3>
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-400">
+                      Reprodução direta · sem descarregar ficheiros
+                    </span>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {VIDEOS_EXEMPLO_KLANDESTINA.map((video, indice) => (
+                      <VideoYoutubeKlandestina
+                        key={video.id}
+                        video={video}
+                        indice={indice + 1}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {aCarregarFrees ? (
                 <p
                   role="status"
@@ -2111,6 +2214,11 @@ export default function RankingRodaPage() {
                   className="border-l-4 border-[#b82535] bg-[#271016] p-5 text-sm text-red-200"
                 >
                   {erroFrees}
+                </p>
+              ) : freesCampeao.length === 0 && rodaId === KLANDESTINA_RODA_ID ? (
+                <p className="border-t border-white/10 pt-4 text-xs leading-relaxed text-zinc-400">
+                  Estes são vídeos de apresentação. Os Frees de Campeão oficiais
+                  aparecerão aqui quando forem associados ao MC vencedor e à edição.
                 </p>
               ) : freesCampeao.length === 0 ? (
                 <div className="flex min-h-60 flex-col items-center justify-center border border-dashed border-[#d6b56d]/35 bg-[#091b13]/85 p-6 text-center">
