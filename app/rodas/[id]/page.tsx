@@ -2881,7 +2881,7 @@ export default function RankingRodaPage() {
                 numero="06"
                 etiqueta="BATALHAS E MELHORES MOMENTOS"
                 titulo="VÍDEOS & CORTES"
-                descricao="Cortes do Instagram das rodas. Toca num vídeo para abrir o Reel original."
+                descricao="Reproduz os cortes do Instagram aqui mesmo no IMIP, sem sair da página."
               />
               <CortesInstagramRoda rodaId={rodaId} />
             </section>
