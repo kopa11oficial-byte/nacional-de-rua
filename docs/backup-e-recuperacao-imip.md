@@ -83,6 +83,24 @@ O script confirmou que os totais destas quatro tabelas coincidem com a exportaç
 
 **Alcance:** recuperação local dos dados da aplicação nas tabelas `public`, não recuperação integral do projeto. O teste não importou `roles.sql` e não comprovou restauro das contas Auth, dos ficheiros físicos do Storage nem das configurações da Cloudflare.
 
+## Backup dos ficheiros do Supabase Storage
+
+Em 9/11/2026 foram identificados 23 objetos em buckets públicos: `fotos-mcs` (17) e `imagens-rodas` (6). Os buckets privados `galeria-mcs` e `videos-mcs` estavam vazios. Estes totais são uma observação de produção, **não** uma prova de que os ficheiros foram descarregados.
+
+O script `scripts/backup-storage-imip.ps1` lê os caminhos dos objetos do `storage.objects` presente no `data.sql` validado. Descarrega cada ficheiro público através do endpoint oficial de Storage, sem precisar de palavra-passe, chave `service_role` ou alteração de permissões. Mantém a estrutura das pastas dos buckets e guarda um `manifesto-storage.json` com SHA-256 e tamanho de cada ficheiro.
+
+No terminal PowerShell do VS Code:
+
+```powershell
+git pull --ff-only origin main
+powershell -ExecutionPolicy Bypass -File .\scripts\backup-storage-imip.ps1
+```
+
+Para apenas contar objetos sem descarregar nenhum: `powershell -ExecutionPolicy Bypass -File .\scripts\backup-storage-imip.ps1 -ApenasVerificarLista`.
+
+Resultado de sucesso esperado: `BACKUP STORAGE CONCLUIDO E FICHEIROS VERIFICADOS`. A pasta `storage-objetos-AAAA-MM-DD_HH-mm-ss_UTC` é criada dentro da pasta do backup SQL já existente, em `backups-local`, excluída do Git. É necessário copiar **também** esta nova pasta para um destino cifrado externo.
+
+**Limites:** o Storage pode ter sido alterado depois do `data.sql` de origem; os objetos descarregados correspondem aos caminhos dessa exportação, não necessariamente a novos objetos adicionados posteriormente. Repetir a exportação SQL antes de novos backups. Este procedimento não recupera automaticamente permissões/políticas de Storage e não cobre buckets privados que venham a ter ficheiros; nesse caso deve ser implementado download autenticado, sem abrir o bucket ao público. Não foi realizado um teste integral de restauro dos ficheiros no projeto.
 ## Como verificar se realmente é recuperável
 
 1. **Nunca testar o restauro na base de dados de produção.**
