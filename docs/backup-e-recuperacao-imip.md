@@ -131,6 +131,34 @@ Todas as referências não nulas de contas nas tabelas `administradores`, `mcs`,
 O verificador de segurança do Supabase apresentou avisos para três funções públicas de pedido de acesso/registo (`SECURITY DEFINER`), 22 funções `SECURITY DEFINER` executáveis por utilizadores autenticados, cinco tabelas com RLS sem políticas (o que geralmente bloqueia acesso direto) e a proteção contra passwords divulgadas desativada. Não foram efetuadas alterações: os formulários públicos podem necessitar de execução anónima e as funções autenticadas podem depender de verificações internas; os avisos exigem revisão de privilégios antes da publicação definitiva. A opção de password divulgada é uma limitação do plano conhecida e anteriormente aceite pelo responsável.
 
 **Distinção importante:** o inventário dos acessos ficou salvaguardado, mas **não foi feito um restauro integral de contas Auth**. Esse procedimento exige um ambiente de testes e verificação da preservação de UUIDs, identidades e políticas.
+### Controlo de permissões de funções (09/11/2026)
+
+Consulta guardada em `database/auditoria-permissoes-imip.sql` e executada contra produção, **somente leitura**:
+
+- 31 funções `SECURITY DEFINER` em `public`; 3 executáveis por `anon`, exatamente os 3 formulários de pedido de acesso/registo previstos; **0 funções anónimas inesperadas**.
+- 22 funções executáveis pelo papel `authenticated`, sujeitas a revisão das verificações internas de identidade/autorização.
+- 0 das 3 funções de aprovação reservadas ao servidor (`aprovar_pedido_roda_organizador`, `aprovar_pedido_roda_organizador_existente`, `aprovar_substituicao_responsavel_organizacao`) abertas a `anon` ou `authenticated`.
+- Confirmadas no código: `confirmar_pontos_edicao` exige utilizador e `pode_gerir_edicao`; `confirmar_finalistas_nacionais` exige administrador; `tratar_pedido_registo_roda` exige `tem_permissao_suporte`.
+- Auditoria de segurança do Supabase mantém avisos `SECURITY DEFINER`: **não** devem ser ignorados como prova de segurança. Testes de negação de acesso para utilizadores sem permissão ainda são pendentes.
+
+Estas verificações são **estáticas e de leitura**; não alteraram qualquer GRANT ou RLS, nem demonstram que todas as funções resistam a pedidos maliciosos.
+
+### Backup confidencial do Supabase Auth — ainda por executar
+
+Confirmação atual: **20 `auth.users` e 20 `auth.identities`**; nenhum fator MFA nem SSO configurado. O CSV do inventário já foi guardado pelo responsável, mas não contém hashes de password.
+
+Em 09/11/2026 foi criado `scripts/backup-auth-imip.ps1`. Este script pede uma **pasta já existente num disco externo cifrado ou volume cifrado montado** fora da unidade do projeto e exige a confirmação `SIM` antes da exportação. Pede a ligação PostgreSQL do projeto em campo protegido e executa `supabase db dump --schema auth --data-only --use-copy` diretamente no destino. Não coloca dados em `backups-local`, GitHub ou chat.
+
+```powershell
+git pull --ff-only origin main
+powershell -ExecutionPolicy Bypass -File .\scripts\backup-auth-imip.ps1
+```
+
+**Os dados exportados são extremamente sensíveis**: podem conter hashes de passwords, tokens e sessões. Não abrir `auth-dados.sql` publicamente, não enviar capturas do seu conteúdo e não o partilhar por mensagem. O script só apresenta totais de contas/identidades e grava `manifesto-auth.json` com SHA-256. A exportação é de leitura, mas ainda não foi executada pelo responsável nem testada num projeto de recuperação.
+
+Os valores esperados atualmente são 20 utilizadores e 20 identidades; se aumentarem entretanto, guardar os totais reais do momento do backup. Em caso de falha, não repetir indiscriminadamente: consultar erro sem expor credenciais.
+
+A Supabase informa que a migração integral de Auth pode conservar hashes de passwords, mas que cada projeto tem credenciais/JWT próprios. A recuperação não deve ser feita por `INSERT` manual em `auth.users` na produção. Seguir a [orientação oficial para migrar Auth](https://supabase.com/kb/troubleshooting/migrating-auth-users-between-projects) e o [guia de backup e restauro](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore), num **projeto de testes separado**. Por segurança, preferir novos JWTs no ambiente recuperado e exigir novo início de sessão.
 ### Procedimento de contingência — em caso de perda do projeto
 
 1. Restaurar a estrutura e os dados `public` numa instância nova, sem apagar o projeto original se ainda estiver disponível.
