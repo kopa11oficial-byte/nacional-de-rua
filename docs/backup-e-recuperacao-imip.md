@@ -1,6 +1,6 @@
 # IMIP — Plano de backup e recuperação (Supabase Free)
 
-**Estado em 9/11/2026:** rotina local preparada; **não existe backup exportado e restauro verificado** nesta revisão.  
+**Estado em 9/11/2026:** exportação SQL local concluída, integridade SHA-256 confirmada e segunda cópia fora do computador confirmada pelo responsável. **O restauro ainda não foi testado e Auth/Storage não fazem parte desta exportação.**  
 **Supabase:** `fprwitwlvntnlnfqttrl` (Nacional de Rua).  
 **Custo:** não altera o plano Free.
 
@@ -39,6 +39,23 @@ O script **não altera a base de dados** e o diretório `backups-local/` é igno
 - Não fazer commit dos ficheiros `.sql` nem do manifesto com dados da estrutura para o GitHub. **Nunca enviar a ligação PostgreSQL** para ferramentas públicas.
 - Comparar o SHA-256 de cada ficheiro com o `manifesto.json` (PowerShell: `Get-FileHash .\backups-local\<pasta>\data.sql -Algorithm SHA256`).
 - Fazer uma nova exportação antes do lançamento, depois de mudanças importantes e, pelo menos, semanalmente enquanto houver edições ativas.
+
+## Teste local isolado no Windows (sem tocar na produção)
+
+Foi criado o script `scripts/testar-restauro-imip.ps1`, que valida os hashes do backup, inicia uma base Supabase PostgreSQL **temporária no Docker**, importa os três ficheiros SQL, verifica os totais de rodas, MCs, edições publicadas e pontuações e remove a instância de teste no final.
+
+Executar na pasta do projeto, com Docker Desktop em execução:
+
+```powershell
+git pull --ff-only origin main
+powershell -ExecutionPolicy Bypass -File .\scripts\testar-restauro-imip.ps1
+```
+
+- Não pede URL, credenciais ou password do Supabase remoto.
+- O teste apenas pode iniciar a base local na máquina, numa pasta temporária independente. Pode descarregar imagens Docker.
+- Se houver erro de compatibilidade nas extensões ou no SQL, **o restauro NÃO está validado**; não corrigir a produção para conseguir executar o teste.
+- Limpar os contentores locais evita deixar outra cópia dos dados em execução; em caso de falha de limpeza, rever o Docker Desktop.
+- Um teste SQL bem-sucedido **não valida** recuperação de contas do Supabase Auth, arquivos do Storage ou configurações da Cloudflare.
 
 ## Como verificar se realmente é recuperável
 
