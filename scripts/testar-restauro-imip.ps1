@@ -10,6 +10,7 @@ $ErrorActionPreference = "Stop"
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $verificador = Join-Path $PSScriptRoot "verificar-backup-imip.ps1"
+$preparador = Join-Path $PSScriptRoot "preparar-dados-publicos-imip.ps1"
 $pastaIsolada = Join-Path $env:TEMP ("imip-restauro-local-" + ([guid]::NewGuid().ToString("N").Substring(0,12)))
 $nomeInstancia = Split-Path $pastaIsolada -Leaf
 $contentor = "supabase_db_" + $nomeInstancia
@@ -74,14 +75,21 @@ try {
         # O roles.sql permanece no backup original, intacto e com hash validado.
         Write-Host "A usar os papeis internos da instancia Supabase local."
         Write-Host "roles.sql sera preservado, mas NAO sera importado neste teste."
-        foreach ($nome in @("schema.sql","data.sql")) {
-            $origemSQL = Join-Path $Pasta $nome
-            & docker cp $origemSQL ($contentor + ":/tmp/" + $nome)
-            if ($LASTEXITCODE -ne 0) { throw ("Nao foi possivel copiar " + $nome) }
-        }
+        # Um db dump pode conter COPY de storage.* ou auth.*.
+        # A instancia local nao permite importar algumas tabelas internas.
+        # Gerar SQL apenas de public.* em pasta temporaria; NUNCA alterar data.sql.
+        $dadosPublicos = Join-Path $pastaIsolada "data-publico.sql"
+        Write-Host "A preparar uma copia temporaria apenas com dados da aplicacao..."
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $preparador -Origem (Join-Path $Pasta "data.sql") -Destino $dadosPublicos
+        if ($LASTEXITCODE -ne 0) { throw "Nao foi possivel selecionar os dados public do backup." }
 
-        Write-Host "A restaurar estrutura e dados na base LOCAL temporaria..."
-        & docker exec $contentor psql -U postgres -d postgres --set=ON_ERROR_STOP=1 --single-transaction --file=/tmp/schema.sql --command="SET session_replication_role = replica" --file=/tmp/data.sql
+        & docker cp (Join-Path $Pasta "schema.sql") ($contentor + ":/tmp/schema.sql")
+        if ($LASTEXITCODE -ne 0) { throw "Nao foi possivel copiar schema.sql" }
+        & docker cp $dadosPublicos ($contentor + ":/tmp/data-publico.sql")
+        if ($LASTEXITCODE -ne 0) { throw "Nao foi possivel copiar data-publico.sql" }
+
+        Write-Host "A restaurar estrutura e dados do IMIP na base LOCAL temporaria..."
+        & docker exec $contentor psql -U postgres -d postgres --set=ON_ERROR_STOP=1 --single-transaction --file=/tmp/schema.sql --command="SET session_replication_role = replica" --file=/tmp/data-publico.sql
         if ($LASTEXITCODE -ne 0) {
             throw "O restauro SQL falhou. A copia ainda NAO foi considerada restauravel."
         }
@@ -99,6 +107,7 @@ try {
         Write-Host ""
         Write-Host "RESTAURO SQL LOCAL CONCLUIDO" -ForegroundColor Green
         Write-Host ("Rodas: " + $valores[0] + "; MCs: " + $valores[1] + "; Edicoes publicadas: " + $valores[2] + "; Pontuacoes: " + $valores[3])
+        Write-Host "NOTA: o SQL de teste incluiu apenas tabelas public (sem Auth/Storage)." -ForegroundColor Yellow
         Write-Host "NOTA: este teste usa os papeis internos locais; roles.sql NAO foi restaurado." -ForegroundColor Yellow
         Write-Host "NOTA: este teste nao inclui contas Auth nem ficheiros do Storage." -ForegroundColor Yellow
         $sucesso = $true
