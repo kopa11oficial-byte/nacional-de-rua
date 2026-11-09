@@ -82,6 +82,8 @@ jobs:
           @(
             '-- pg_dump ficticio'
             'SET statement_timeout = 0;'
+            'RESET ALL;'
+            'ALTER TABLE storage.buckets_vectors ENABLE TRIGGER ALL;'
             'COPY public.rodas (id, nome) FROM stdin;'
             ('r1' + [char]9 + 'Roda teste')
             '\.'
@@ -111,6 +113,13 @@ jobs:
               $resultado -notmatch 'COPY public\.rodas' -or
               $resultado -notmatch "setval\('public.roda_seq'") {
             throw "O preparador perdeu dados public."
+          }
+          if ($resultado -match 'RESET ALL' -or $resultado -match 'ALTER TABLE') {
+            throw "Comando nao permitido incluido no SQL temporario."
+          }
+          $resumo = Get-Content -LiteralPath ($saida + '.contagens.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ($resumo.rodas -ne 1 -or $resumo.mcs -ne 1 -or $resumo.edicoes -ne 1 -or $resumo.pontuacoes -ne 1) {
+            throw "As contagens dos dados originais nao foram preservadas."
           }
           if ($resultado -match 'storage\.' -or $resultado -match 'auth\.') {
             throw "O preparador deixou entrar dados internos."
