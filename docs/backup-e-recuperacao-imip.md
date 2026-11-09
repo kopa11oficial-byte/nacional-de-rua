@@ -1,6 +1,6 @@
 # IMIP — Plano de backup e recuperação (Supabase Free)
 
-**Estado em 9/11/2026:** exportação SQL local concluída, integridade SHA-256 confirmada e segunda cópia fora do computador confirmada pelo responsável. **Restauro das tabelas `public` testado com sucesso numa base local em Docker, com contagens iguais às do backup. Auth, Storage e importação de roles ainda não foram validados.**  
+**Estado em 9/11/2026:** exportação SQL local concluída, integridade SHA-256 confirmada e segunda cópia fora do computador confirmada pelo responsável. **Restauro das tabelas `public` testado com sucesso numa base local em Docker, com contagens iguais às do backup. Os 23 objetos públicos do Storage foram descarregados e verificados localmente; falta confirmar a segunda cópia externa, o restauro desses objetos, a recuperação de Auth e a importação de roles.**  
 **Supabase:** `fprwitwlvntnlnfqttrl` (Nacional de Rua).  
 **Custo:** não altera o plano Free.
 
@@ -85,7 +85,7 @@ O script confirmou que os totais destas quatro tabelas coincidem com a exportaç
 
 ## Backup dos ficheiros do Supabase Storage
 
-Em 9/11/2026 foram identificados 23 objetos em buckets públicos: `fotos-mcs` (17) e `imagens-rodas` (6). Os buckets privados `galeria-mcs` e `videos-mcs` estavam vazios. Estes totais são uma observação de produção, **não** uma prova de que os ficheiros foram descarregados.
+Em 9/11/2026 foram identificados 23 objetos em buckets públicos: `fotos-mcs` (17) e `imagens-rodas` (6). Os buckets privados `galeria-mcs` e `videos-mcs` estavam vazios. Os 23 objetos foram posteriormente descarregados e validados localmente pelo responsável (captura de ecrã do terminal em 09/11/2026).
 
 O script `scripts/backup-storage-imip.ps1` lê os caminhos dos objetos do `storage.objects` presente no `data.sql` validado. Descarrega cada ficheiro público através do endpoint oficial de Storage, sem precisar de palavra-passe, chave `service_role` ou alteração de permissões. Mantém a estrutura das pastas dos buckets e guarda um `manifesto-storage.json` com SHA-256 e tamanho de cada ficheiro.
 
@@ -100,6 +100,8 @@ Para apenas contar objetos sem descarregar nenhum: `powershell -ExecutionPolicy 
 
 Resultado de sucesso esperado: `BACKUP STORAGE CONCLUIDO E FICHEIROS VERIFICADOS`. A pasta `storage-objetos-AAAA-MM-DD_HH-mm-ss_UTC` é criada dentro da pasta do backup SQL já existente, em `backups-local`, excluída do Git. É necessário copiar **também** esta nova pasta para um destino cifrado externo.
 
+**Resultado confirmado — 09/11/2026:** `BACKUP STORAGE CONCLUIDO E FICHEIROS VERIFICADOS` com 23 de 23 objetos, gravados em `backups-local/2026-11-09_08-40-55_UTC/storage-objetos-2026-11-09_11-11-04_UTC/`. O backup local está concluído; **a cópia externa desta pasta ainda não foi confirmada**. Não se verificou ainda um restauro completo de fotografias num novo projeto. 
+
 **Limites:** o Storage pode ter sido alterado depois do `data.sql` de origem; os objetos descarregados correspondem aos caminhos dessa exportação, não necessariamente a novos objetos adicionados posteriormente. Repetir a exportação SQL antes de novos backups. Este procedimento não recupera automaticamente permissões/políticas de Storage e não cobre buckets privados que venham a ter ficheiros; nesse caso deve ser implementado download autenticado, sem abrir o bucket ao público. Não foi realizado um teste integral de restauro dos ficheiros no projeto.
 ## Como verificar se realmente é recuperável
 
@@ -107,6 +109,8 @@ Resultado de sucesso esperado: `BACKUP STORAGE CONCLUIDO E FICHEIROS VERIFICADOS
 2. Num PostgreSQL isolado ou projeto de testes descartável, seguir a [documentação oficial de backup e restauro via CLI](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore).
 3. Confirmar que é possível recuperar pelo menos rodas, MCs, edições, batalhas e pontuações, e que os totais correspondem ao manifesto/ao momento da exportação.
 4. Documentar a data do teste, destino usado e se foi bem-sucedido. Só então marcar `restauro_testado: true` num registo de auditoria separado; **não alterar retroativamente o manifesto original**.
+
+**Levantamento Auth (09/11/2026, apenas totais):** 20 contas em `auth.users`, todas com email confirmado. Esta contagem não equivale a um backup de Auth. Não se exportaram passwords, hashes ou tokens para esta documentação.
 
 ### Componentes adicionais que precisam de plano próprio
 
