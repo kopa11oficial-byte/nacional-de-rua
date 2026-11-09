@@ -68,14 +68,20 @@ try {
             throw ("Contentor de teste nao encontrado: " + $contentor)
         }
 
-        foreach ($nome in @("roles.sql","schema.sql","data.sql")) {
+        # O PostgreSQL local criado pela Supabase CLI ja inclui os papeis
+        # internos como supabase_admin. Nao executar ALTER ROLE do roles.sql:
+        # estes papeis sao reservados e a instancia local rejeita modifica-los.
+        # O roles.sql permanece no backup original, intacto e com hash validado.
+        Write-Host "A usar os papeis internos da instancia Supabase local."
+        Write-Host "roles.sql sera preservado, mas NAO sera importado neste teste."
+        foreach ($nome in @("schema.sql","data.sql")) {
             $origemSQL = Join-Path $Pasta $nome
             & docker cp $origemSQL ($contentor + ":/tmp/" + $nome)
             if ($LASTEXITCODE -ne 0) { throw ("Nao foi possivel copiar " + $nome) }
         }
 
-        Write-Host "A restaurar dados na base LOCAL temporaria..."
-        & docker exec $contentor psql -U postgres -d postgres --set=ON_ERROR_STOP=1 --single-transaction --file=/tmp/roles.sql --file=/tmp/schema.sql --command="SET session_replication_role = replica" --file=/tmp/data.sql
+        Write-Host "A restaurar estrutura e dados na base LOCAL temporaria..."
+        & docker exec $contentor psql -U postgres -d postgres --set=ON_ERROR_STOP=1 --single-transaction --file=/tmp/schema.sql --command="SET session_replication_role = replica" --file=/tmp/data.sql
         if ($LASTEXITCODE -ne 0) {
             throw "O restauro SQL falhou. A copia ainda NAO foi considerada restauravel."
         }
@@ -93,6 +99,7 @@ try {
         Write-Host ""
         Write-Host "RESTAURO SQL LOCAL CONCLUIDO" -ForegroundColor Green
         Write-Host ("Rodas: " + $valores[0] + "; MCs: " + $valores[1] + "; Edicoes publicadas: " + $valores[2] + "; Pontuacoes: " + $valores[3])
+        Write-Host "NOTA: este teste usa os papeis internos locais; roles.sql NAO foi restaurado." -ForegroundColor Yellow
         Write-Host "NOTA: este teste nao inclui contas Auth nem ficheiros do Storage." -ForegroundColor Yellow
         $sucesso = $true
     } finally {
