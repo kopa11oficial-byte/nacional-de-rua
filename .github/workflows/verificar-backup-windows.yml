@@ -10,6 +10,7 @@ on:
       - "scripts/testar-restauro-imip.ps1"
       - "scripts/preparar-dados-publicos-imip.ps1"
       - "scripts/backup-storage-imip.ps1"
+      - "scripts/backup-auth-imip.ps1"
       - ".github/workflows/verificar-backup-windows.yml"
 
 permissions:
@@ -181,6 +182,32 @@ jobs:
           $hash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
           if (-not $hash) { throw "Nao verificou data.sql original." }
           Write-Host "OK: dois objetos listados, sem downloads ou credenciais."
+      - name: Verificar sintaxe PowerShell do backup Auth cifrado (sem o executar)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = (Resolve-Path "./scripts/backup-auth-imip.ps1").Path
+          $bytes = [System.IO.File]::ReadAllBytes($script)
+          if (@($bytes | Where-Object { $_ -gt 127 }).Count -ne 0) {
+            throw "O script Auth precisa ser ASCII."
+          }
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            $script, [ref]$tokens, [ref]$parseErrors
+          ) | Out-Null
+          if ($parseErrors.Count -ne 0) {
+            $parseErrors | ForEach-Object { Write-Host $_.Message }
+            throw "Sintaxe invalida no backup Auth."
+          }
+          $conteudo = [System.IO.File]::ReadAllText($script)
+          if (-not $conteudo.Contains('--schema auth') -or
+              -not $conteudo.Contains('--data-only') -or
+              -not $conteudo.Contains('--use-copy') -or
+              -not $conteudo.Contains('Read-Host "Cola a ligacao PostgreSQL no campo protegido" -AsSecureString')) {
+            throw "Estao em falta protecoes essenciais no backup Auth."
+          }
+          Write-Host "OK: sintaxe e controlos principais do backup Auth."
       - name: Validar sintaxe do verificador e simular integridade de ficheiros
         shell: powershell
         run: |
