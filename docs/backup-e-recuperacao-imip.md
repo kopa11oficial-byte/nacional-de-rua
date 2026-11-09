@@ -143,11 +143,23 @@ Consulta guardada em `database/auditoria-permissoes-imip.sql` e executada contra
 
 Estas verificações são **estáticas e de leitura**; não alteraram qualquer GRANT ou RLS, nem demonstram que todas as funções resistam a pedidos maliciosos.
 
+### Alternativa sem ligação PostgreSQL: extrair Auth de backup SQL existente
+
+Foi criado `scripts/backup-auth-do-sql-imip.ps1` para primeiro verificar se o `data.sql` já validado contém `COPY auth.users` e `COPY auth.identities`. Se existirem ambos, o script extrai só esses dois blocos, preservando-os sem transformação, e grava a cópia na unidade externa cifrada com hash SHA-256. Se algum bloco faltar, interrompe o procedimento sem declarar sucesso.
+
+```powershell
+git pull --ff-only origin main
+powershell -ExecutionPolicy Bypass -File .\scripts\backup-auth-do-sql-imip.ps1 -DestinoCifrado "D:\IMIP"
+```
+
+**Não exige Docker, ligação PostgreSQL ou password.** É um procedimento preferencial para evitar repetir tentativas de autenticação, desde que o SQL anterior inclua os dados. A confirmação de que esses blocos existem no backup real ainda depende da execução no computador do responsável.
+
+**Limitações:** o ficheiro gerado contém apenas os registos de `auth.users` e `auth.identities`, não todo o schema Auth nem sessões, configurações e metadados de serviços. Não foi testado um restauro das contas numa instância nova. Não partilhar o SQL ou o conteúdo do manifesto com segredos.
 ### Backup confidencial do Supabase Auth — ainda por executar
 
 Confirmação atual: **20 `auth.users` e 20 `auth.identities`**; nenhum fator MFA nem SSO configurado. O CSV do inventário já foi guardado pelo responsável, mas não contém hashes de password.
 
-Em 09/11/2026 foi criado `scripts/backup-auth-imip.ps1`. Este script pede uma **pasta já existente num disco externo cifrado ou volume cifrado montado** fora da unidade do projeto e exige a confirmação `SIM` antes da exportação. Pede a ligação PostgreSQL do projeto em campo protegido e executa `supabase db dump --schema auth --data-only --use-copy` diretamente no destino. Não coloca dados em `backups-local`, GitHub ou chat.
+Em 09/11/2026 foi criado `scripts/backup-auth-imip.ps1`. A sua validação inicial de URI era demasiado restritiva: foi corrigida para aceitar os domínios legítimos `.supabase.co` e `.supabase.com` e passwords com caracteres especiais, e testada com ligações fictícias no Windows PowerShell 5.1. **Priorizar a alternativa offline acima antes de pedir outra ligação PostgreSQL.** Este script pede uma **pasta já existente num disco externo cifrado ou volume cifrado montado** fora da unidade do projeto e exige a confirmação `SIM` antes da exportação. Pede a ligação PostgreSQL do projeto em campo protegido e executa `supabase db dump --schema auth --data-only --use-copy` diretamente no destino. Não coloca dados em `backups-local`, GitHub ou chat.
 
 ```powershell
 git pull --ff-only origin main
