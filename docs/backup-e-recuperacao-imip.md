@@ -118,8 +118,19 @@ O ficheiro [database/auditoria-recuperacao-auth.sql](../database/auditoria-recup
 3. Exportar o resultado para CSV se o editor disponibilizar essa opção; caso contrário, guardar a listagem com cuidado num ficheiro local protegido. A listagem contém emails e IDs de utilizadores: **não enviar para este chat, GitHub, Cloudflare ou serviços públicos**.
 4. Guardar uma segunda cópia cifrada fora do computador e confirmar que contém as 20 linhas.
 
+**Estado em 09/11/2026:** inventário das 20 contas exportado e guardado, confirmado pelo responsável. O inventário contém dados pessoais: **não está no GitHub**. A consulta SQL guardada no repositório é apenas de leitura.
+
 **Importante:** esse CSV é um **inventário de recuperação**, não contém palavras-passe ou hashes, e não permite reconstruir automaticamente sessões ou o serviço Auth. O backup principal via `supabase db dump` não cobre integralmente o schema Auth.
 
+### Auditoria final de associações e avisos
+
+Em 09/11/2026, a análise somente de leitura confirmou: 20 contas com email confirmado, 18 associadas a pelo menos um perfil de aplicação, 2 sem associação direta e 3 associadas a mais de uma função. Existem 2 contas com metadados `tipo_acesso=mc` sem perfil MC vinculado; nenhuma com `tipo_acesso=organizacao` sem organização vinculada. Existem 2 contas com função de aplicação, mas sem `tipo_acesso` definido nos metadados; uma conta associada a suporte regional também tem `tipo_acesso=mc`. Estes conjuntos podem sobrepor-se; **não representam necessariamente erros**, especialmente quando uma pessoa exerce vários papéis.
+
+Todas as referências não nulas de contas nas tabelas `administradores`, `mcs`, `organizacoes`, `suportes_imip`, `suportes_regionais_imip` e `mc_ativacoes_acesso` apontavam para utilizadores existentes. As tabelas de gestão de acessos verificadas tinham RLS ativado. A função `tem_permissao_suporte` reconhece administradores, suportes por área e suportes regionais ativos, sem depender apenas do valor `tipo_acesso`.
+
+O verificador de segurança do Supabase apresentou avisos para três funções públicas de pedido de acesso/registo (`SECURITY DEFINER`), 22 funções `SECURITY DEFINER` executáveis por utilizadores autenticados, cinco tabelas com RLS sem políticas (o que geralmente bloqueia acesso direto) e a proteção contra passwords divulgadas desativada. Não foram efetuadas alterações: os formulários públicos podem necessitar de execução anónima e as funções autenticadas podem depender de verificações internas; os avisos exigem revisão de privilégios antes da publicação definitiva. A opção de password divulgada é uma limitação do plano conhecida e anteriormente aceite pelo responsável.
+
+**Distinção importante:** o inventário dos acessos ficou salvaguardado, mas **não foi feito um restauro integral de contas Auth**. Esse procedimento exige um ambiente de testes e verificação da preservação de UUIDs, identidades e políticas.
 ### Procedimento de contingência — em caso de perda do projeto
 
 1. Restaurar a estrutura e os dados `public` numa instância nova, sem apagar o projeto original se ainda estiver disponível.
