@@ -152,10 +152,10 @@ git pull --ff-only origin main
 powershell -ExecutionPolicy Bypass -File .\scripts\backup-auth-do-sql-imip.ps1 -DestinoCifrado "D:\IMIP"
 ```
 
-**Não exige Docker, ligação PostgreSQL ou password.** É um procedimento preferencial para evitar repetir tentativas de autenticação, desde que o SQL anterior inclua os dados. A confirmação de que esses blocos existem no backup real ainda depende da execução no computador do responsável.
+**Não exige Docker, ligação PostgreSQL ou password.** É um procedimento preferencial para evitar repetir tentativas de autenticação, desde que o SQL anterior inclua os dados. **Resultado confirmado no computador do responsável (09/11/2026):** o script encontrou os dois blocos no backup SQL, confirmou **20 registos `auth.users` e 20 `auth.identities`**, e gravou na pen USB BitLocker protegida `D:\IMIP\IMIP-Auth-SQL-2026-11-09_16-04-55_UTC`. O manifesto de integridade foi registado. Foi confirmada anteriormente a proteção BitLocker da unidade (100%, Protection On). Não foram introduzidas novas credenciais nem executadas alterações no Supabase.
 
 **Limitações:** o ficheiro gerado contém apenas os registos de `auth.users` e `auth.identities`, não todo o schema Auth nem sessões, configurações e metadados de serviços. Não foi testado um restauro das contas numa instância nova. Não partilhar o SQL ou o conteúdo do manifesto com segredos.
-### Backup confidencial do Supabase Auth — ainda por executar
+### Alternativa de exportação direta Auth via Supabase CLI — não necessária neste momento
 
 Confirmação atual: **20 `auth.users` e 20 `auth.identities`**; nenhum fator MFA nem SSO configurado. O CSV do inventário já foi guardado pelo responsável, mas não contém hashes de password.
 
