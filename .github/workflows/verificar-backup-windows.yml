@@ -11,6 +11,7 @@ on:
       - "scripts/preparar-dados-publicos-imip.ps1"
       - "scripts/backup-storage-imip.ps1"
       - "scripts/backup-auth-imip.ps1"
+      - "scripts/validar-ligacao-imip.ps1"
       - ".github/workflows/verificar-backup-windows.yml"
 
 permissions:
@@ -182,6 +183,44 @@ jobs:
           $hash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
           if (-not $hash) { throw "Nao verificou data.sql original." }
           Write-Host "OK: dois objetos listados, sem downloads ou credenciais."
+      - name: Validar URIs PostgreSQL ficticias sem contactar Supabase
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $f = (Resolve-Path "./scripts/validar-ligacao-imip.ps1").Path
+          $tokens = $null; $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($f,[ref]$tokens,[ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw "Erro de sintaxe no validador de URI." }
+          . $f
+          $refImip = 'fprwitwlvntnlnfqttrl'
+          $pooler = 'aws-1-eu-west-1.pooler.supabase.com'
+          $uriNormal = 'postgresql://postgres.' + $refImip + ':senhaFicticia123@' + $pooler + ':5432/postgres'
+          $r1 = ConvertTo-ImipPgUri -Ligacao $uriNormal
+          if ($r1 -ne $uriNormal) { throw 'URI Session pooler deveria passar sem alteracoes.' }
+
+          $uriComCaracteres = 'postgresql://postgres.' + $refImip + ':senha@com#simbolo?@' + $pooler + ':5432/postgres'
+          $r2 = ConvertTo-ImipPgUri -Ligacao $uriComCaracteres
+          if ($r2 -notmatch 'senha%40com%23simbolo%3F') { throw 'A password nao foi percent-encoded.' }
+
+          $uriCodificada = 'postgresql://postgres.' + $refImip + ':senha%40segura@' + $pooler + ':5432/postgres'
+          $r3 = ConvertTo-ImipPgUri -Ligacao $uriCodificada
+          if ($r3 -ne $uriCodificada) { throw 'A password ja codificada foi alterada.' }
+
+          $direct = 'postgresql://postgres:senhaFicticia@db.' + $refImip + '.supabase.co:5432/postgres'
+          $r4 = ConvertTo-ImipPgUri -Ligacao $direct
+          if ($r4 -ne $direct) { throw 'Direct .supabase.co deveria ser aceite.' }
+
+          $errados = @(
+            'postgresql://postgres.OUTRO:senhaFicticia@' + $pooler + ':5432/postgres',
+            'postgresql://postgres.' + $refImip + ':[YOUR-PASSWORD]@' + $pooler + ':5432/postgres',
+            'postgresql://postgres.' + $refImip + ':senhaFicticia@evil.example.com:5432/postgres'
+          )
+          foreach ($uri in $errados) {
+            $rejeitada = $false
+            try { $null = ConvertTo-ImipPgUri -Ligacao $uri } catch { $rejeitada = $true }
+            if (-not $rejeitada) { throw 'Um URI inseguro nao foi rejeitado.' }
+          }
+          Write-Host 'OK: Session pooler, Direct, caracteres especiais e rejeicao de URIs erradas.'
       - name: Verificar sintaxe PowerShell do backup Auth cifrado (sem o executar)
         shell: powershell
         run: |
