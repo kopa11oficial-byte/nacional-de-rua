@@ -9,6 +9,7 @@ on:
       - "scripts/verificar-backup-imip.ps1"
       - "scripts/testar-restauro-imip.ps1"
       - "scripts/preparar-dados-publicos-imip.ps1"
+      - "scripts/backup-storage-imip.ps1"
       - ".github/workflows/verificar-backup-windows.yml"
 
 permissions:
@@ -135,6 +136,51 @@ jobs:
           if ($LASTEXITCODE -ne 1) { throw "O preparador nao bloqueou SQL desconhecido." }
           $global:LASTEXITCODE = 0
           Write-Host "OK: apenas public restauravel, dados internos excluidos e comandos inesperados bloqueados."
+      - name: Testar leitura do Storage sem download nem segredos
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = (Resolve-Path "./scripts/backup-storage-imip.ps1").Path
+          $bytes = [System.IO.File]::ReadAllBytes($script)
+          if (@($bytes | Where-Object { $_ -gt 127 }).Count -ne 0) { throw "Script Storage precisa ser ASCII." }
+          $tokens = $null
+          $erros = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$erros) | Out-Null
+          if ($erros.Count -ne 0) { $erros | ForEach-Object { Write-Host $_.Message }; throw "Erro de sintaxe Storage." }
+          $dir = Join-Path $env:RUNNER_TEMP 'imip-storage-fixture'
+          New-Item -Path $dir -ItemType Directory -Force | Out-Null
+          Set-Content -LiteralPath (Join-Path $dir 'roles.sql') -Value '-- roles ficticios do teste' -Encoding ASCII
+          Set-Content -LiteralPath (Join-Path $dir 'schema.sql') -Value '-- esquema ficticio do teste' -Encoding ASCII
+          $source = Join-Path $dir 'data.sql'
+          $rows = @(
+            '-- pg_dump ficticio para teste offline'
+            'COPY storage.objects (id, bucket_id, name, owner) FROM stdin;'
+            ('a' + [char]9 + 'fotos-mcs' + [char]9 + 'MC/foto1.jpg' + [char]9 + '\N')
+            ('b' + [char]9 + 'imagens-rodas' + [char]9 + 'rodas/foto2.png' + [char]9 + '\N')
+            '\.'
+            'COPY public.rodas (id) FROM stdin;'
+            'roda1'
+            '\.'
+          )
+          $rows | Set-Content -LiteralPath $source -Encoding UTF8
+          $meta = @()
+          foreach ($name in @('roles.sql','schema.sql','data.sql')) {
+            $p = Join-Path $dir $name
+            $meta += @{
+              nome = $name
+              bytes = (Get-Item -LiteralPath $p).Length
+              sha256 = (Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash
+            }
+          }
+          @{ referencia_supabase='fprwitwlvntnlnfqttrl'; ficheiros=$meta } |
+            ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $dir 'manifesto.json') -Encoding UTF8
+          $saida = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Pasta $dir -ApenasVerificarLista
+          if ($LASTEXITCODE -ne 0) { $saida | Write-Host; throw "Nao reconheceu dois objetos Storage." }
+          if (($saida -join [char]10) -notmatch 'Total: 2') { throw "Totais Storage incorretos." }
+          if (($saida -join [char]10) -notmatch 'PRE-VISUALIZACAO CONCLUIDA') { throw "Teste nao foi offline." }
+          $hash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+          if (-not $hash) { throw "Nao verificou data.sql original." }
+          Write-Host "OK: dois objetos listados, sem downloads ou credenciais."
       - name: Validar sintaxe do verificador e simular integridade de ficheiros
         shell: powershell
         run: |
