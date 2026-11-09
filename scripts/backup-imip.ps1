@@ -1,8 +1,8 @@
-# IMIP — backup manual da base de dados (Windows, Supabase Free)
+# IMIP - backup manual da base de dados (Windows, Supabase Free)
 # Executar no teu computador: powershell -ExecutionPolicy Bypass -File .\scripts\backup-imip.ps1
 # Requer Supabase CLI e Docker Desktop instalado e aberto.
-# Não envia dados para o GitHub nem grava a ligação/credenciais em ficheiros.
-# IMPORTANTE: esta exportação oficial não inclui utilizadores Auth nem ficheiros Storage.
+# Nao envia dados para o GitHub nem grava a ligacao/credenciais em ficheiros.
+# IMPORTANTE: esta exportacao oficial nao inclui utilizadores Auth nem ficheiros Storage.
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -27,11 +27,11 @@ function Executar-Exportacao([string]$nome, [string[]]$opcoes) {
     & supabase db dump --db-url $dbUrl -f $destino @opcoes
 
     if ($LASTEXITCODE -ne 0) {
-        throw "A exportação $nome falhou. Não consideres esta pasta uma cópia de segurança válida."
+        throw "A exportacao $nome falhou. Nao consideres esta pasta uma copia de seguranca valida."
     }
     $ficheiro = Get-Item -LiteralPath $destino -ErrorAction Stop
     if ($ficheiro.Length -lt 10) {
-        throw "O ficheiro $nome está vazio ou incompleto."
+        throw "O ficheiro $nome esta vazio ou incompleto."
     }
 }
 
@@ -39,19 +39,19 @@ try {
     Verificar-Comando "supabase"
     Verificar-Comando "docker"
 
-    & docker info --format '{{.ServerVersion}}' *> $null
+    & docker info --format '{{.ServerVersion}}' 1> $null 2> $null
     if ($LASTEXITCODE -ne 0) {
         throw "Abre o Docker Desktop antes de executar o backup."
     }
 
     Write-Host ""
-    Write-Host "IMIP — cópia de segurança local da base de dados" -ForegroundColor Cyan
+    Write-Host "IMIP - copia de seguranca local da base de dados" -ForegroundColor Cyan
     Write-Host "Projeto: Nacional de Rua ($projectRef)"
-    Write-Host "Abre o Supabase > Connect > Session pooler e copia a ligação PostgreSQL."
-    Write-Host "A ligação contém a palavra-passe da base de dados. Não a partilhes por chat nem a coloques no GitHub."
+    Write-Host "Abre o Supabase > Connect > Session pooler e copia a ligacao PostgreSQL."
+    Write-Host "A ligacao contem a palavra-passe da base de dados. Nao a partilhes por chat nem a coloques no GitHub."
     Write-Host ""
 
-    $secureUrl = Read-Host "Cola a ligação PostgreSQL completa (campo protegido)" -AsSecureString
+    $secureUrl = Read-Host "Cola a ligacao PostgreSQL completa (campo protegido)" -AsSecureString
     $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureUrl)
     try {
         $dbUrl = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
@@ -60,16 +60,16 @@ try {
     }
 
     if ([string]::IsNullOrWhiteSpace($dbUrl)) {
-        throw "Não foi indicada uma ligação à base de dados."
+        throw "Nao foi indicada uma ligacao a base de dados."
     }
     try { $uri = [System.Uri]::new($dbUrl) }
-    catch { throw "A ligação tem um formato inválido. Copia-a do Supabase > Connect." }
+    catch { throw "A ligacao tem um formato invalido. Copia-a do Supabase > Connect." }
 
     if ($uri.Scheme -notin @("postgresql", "postgres")) {
-        throw "A ligação tem de ser PostgreSQL."
+        throw "A ligacao tem de ser PostgreSQL."
     }
     if ($dbUrl -notlike "*$projectRef*") {
-        throw "A ligação não identifica o projeto Nacional de Rua. Operação cancelada para evitar exportar outra base de dados."
+        throw "A ligacao nao identifica o projeto Nacional de Rua. Operacao cancelada para evitar exportar outra base de dados."
     }
     if ($dbUrl -match '\[YOUR-PASSWORD\]' -or $dbUrl -match '\[PASSWORD\]') {
         throw "Substitui o marcador de password pela palavra-passe da base de dados."
@@ -77,7 +77,7 @@ try {
 
     New-Item -Path $folder -ItemType Directory -Force | Out-Null
 
-    # Processo recomendado na documentação oficial do Supabase para plano gratuito.
+    # Processo recomendado na documentacao oficial do Supabase para plano gratuito.
     Executar-Exportacao "roles.sql" @("--role-only")
     Executar-Exportacao "schema.sql" @()
     Executar-Exportacao "data.sql" @("--data-only", "--use-copy")
@@ -100,7 +100,7 @@ try {
         referencia_supabase = $projectRef
         gerado_em_utc = (Get-Date).ToUniversalTime().ToString("o")
         metodo = "Supabase CLI db dump: roles + schema + data (public)"
-        verificacao = "ficheiros presentes, não vazios, hashes SHA-256"
+        verificacao = "ficheiros presentes, nao vazios, hashes SHA-256"
         restauro_testado = $false
         auth_incluido = $false
         storage_ficheiros_incluidos = $false
@@ -111,16 +111,16 @@ try {
     $manifesto | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $manifestoPath -Encoding UTF8
 
     Write-Host ""
-    Write-Host "EXPORTAÇÃO CONCLUÍDA" -ForegroundColor Green
+    Write-Host "EXPORTACAO CONCLUIDA" -ForegroundColor Green
     Write-Host "Pasta: $folder"
     Write-Host "Ficheiros: roles.sql, schema.sql, data.sql e manifesto.json"
     Write-Host ""
-    Write-Host "ATENÇÃO: ainda falta guardar uma cópia FORA deste computador, num local cifrado, e testar o restauro." -ForegroundColor Yellow
-    Write-Host "Os utilizadores Auth e os ficheiros Storage não estão incluídos nesta exportação." -ForegroundColor Yellow
+    Write-Host "ATENCAO: ainda falta guardar uma copia FORA deste computador, num local cifrado, e testar o restauro." -ForegroundColor Yellow
+    Write-Host "Os utilizadores Auth e os ficheiros Storage nao estao incluidos nesta exportacao." -ForegroundColor Yellow
     Write-Host "Nunca publiques os ficheiros no GitHub."
 }
 catch {
-    Write-Error ("Backup não confirmado: " + $_.Exception.Message)
+    Write-Error ("Backup nao confirmado: " + $_.Exception.Message)
     exit 1
 }
 finally {
