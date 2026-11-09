@@ -45,7 +45,7 @@ try {
         Verificar-Comando "node"
         Verificar-Comando "npx.cmd"
         $nodeVersion = (& node --version).TrimStart("v")
-        if ([int](($nodeVersion -split "\\.")[0]) -lt 20) {
+        if ([int]($nodeVersion.Split('.')[0]) -lt 20) {
             throw "O Supabase via npx precisa de Node.js 20 ou superior."
         }
         Write-Host "Supabase CLI global nao instalada: sera usada pelo npx (sem instalacao global)."
