@@ -70,9 +70,9 @@ jobs:
             referencia_supabase = 'fprwitwlvntnlnfqttrl'
             ficheiros = $dados
           } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $pasta 'manifesto.json') -Encoding UTF8
-          & $script -Pasta $pasta
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Pasta $pasta
           if ($LASTEXITCODE -ne 0) { throw 'Teste de integridade deveria passar.' }
           Add-Content -LiteralPath (Join-Path $pasta 'data.sql') -Value '-- ALTERADO' -Encoding ASCII
-          & $script -Pasta $pasta
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Pasta $pasta
           if ($LASTEXITCODE -ne 1) { throw 'O verificador nao detetou o ficheiro alterado.' }
           Write-Host 'OK: backup valido aceite e ficheiro modificado recusado.'
