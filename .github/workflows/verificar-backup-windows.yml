@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "scripts/backup-imip.ps1"
+      - "scripts/verificar-backup-imip.ps1"
       - ".github/workflows/verificar-backup-windows.yml"
 
 permissions:
@@ -42,3 +43,36 @@ jobs:
             throw "Erros de sintaxe no script."
           }
           Write-Host "OK: sintaxe PowerShell 5.1 valida, sem executar backup."
+      - name: Validar sintaxe do verificador e simular integridade de ficheiros
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = (Resolve-Path "./scripts/verificar-backup-imip.ps1").Path
+          $bytes = [System.IO.File]::ReadAllBytes($script)
+          if (@($bytes | Where-Object { $_ -gt 127 }).Count -ne 0) { throw 'O verificador deve ser ASCII.' }
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { throw "Falha de sintaxe no verificador." }
+          $pasta = Join-Path $env:RUNNER_TEMP 'imip-fixture'
+          New-Item -Path $pasta -ItemType Directory -Force | Out-Null
+          $dados = @()
+          foreach ($nome in @('roles.sql','schema.sql','data.sql')) {
+            $path = Join-Path $pasta $nome
+            Set-Content -LiteralPath $path -Value ('-- DADOS FICTICIOS DE TESTE ' + $nome) -Encoding ASCII
+            $dados += @{
+              nome = $nome
+              bytes = (Get-Item -LiteralPath $path).Length
+              sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+            }
+          }
+          @{
+            referencia_supabase = 'fprwitwlvntnlnfqttrl'
+            ficheiros = $dados
+          } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $pasta 'manifesto.json') -Encoding UTF8
+          & $script -Pasta $pasta
+          if ($LASTEXITCODE -ne 0) { throw 'Teste de integridade deveria passar.' }
+          Add-Content -LiteralPath (Join-Path $pasta 'data.sql') -Value '-- ALTERADO' -Encoding ASCII
+          & $script -Pasta $pasta
+          if ($LASTEXITCODE -ne 1) { throw 'O verificador nao detetou o ficheiro alterado.' }
+          Write-Host 'OK: backup valido aceite e ficheiro modificado recusado.'
