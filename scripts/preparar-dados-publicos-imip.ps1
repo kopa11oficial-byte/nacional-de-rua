@@ -71,9 +71,9 @@ try {
 
         if ($linha -match '^\s*SELECT\s+pg_catalog\.setval\s*\(') {
             # Manter os valores das sequencias da app, nunca os internos.
-            if ($linha -match "^\\s*SELECT\\s+pg_catalog\\.setval\\s*\\(\\s*'public\\.") {
+            if ($linha -match "^\s*SELECT\s+pg_catalog\.setval\s*\(\s*'public\.") {
                 $escritor.WriteLine($linha)
-            } elseif ($linha -notmatch "^\\s*SELECT\\s+pg_catalog\\.setval\\s*\\(\\s*'[^']+\\.") {
+            } elseif ($linha -notmatch "^\s*SELECT\s+pg_catalog\.setval\s*\(\s*'[^']+\.") {
                 throw ("Sequencia inesperada na linha " + $linhaNumero)
             }
             continue
