@@ -13,7 +13,7 @@ $projectRef = "fprwitwlvntnlnfqttrl"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $verificador = Join-Path $PSScriptRoot "verificar-backup-imip.ps1"
 $objetos = New-Object 'System.Collections.Generic.List[object]'
-$chaves = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+$chaves = @{}
 $contagens = @{}
 $destino = $null
 $concluido = $false
@@ -36,7 +36,7 @@ function Validar-CaminhoObjeto([string]$caminho) {
             throw "Nome de objeto incompativel com Windows; nao foi feita nenhuma copia."
         }
     }
-    return ,$partes
+    return $partes
 }
 
 try {
@@ -88,9 +88,10 @@ try {
                 }
                 $partes = @(Validar-CaminhoObjeto $nome)
                 $identidade = $bucket + "/" + $nome
-                if (-not $chaves.Add($identidade)) {
+                if ($chaves.ContainsKey($identidade)) {
                     throw "Objeto duplicado no dump."
                 }
+                $chaves[$identidade] = $true
                 $objetos.Add([pscustomobject]@{
                     bucket = $bucket
                     caminho = $nome
