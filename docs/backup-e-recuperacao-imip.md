@@ -15,7 +15,7 @@ O script `scripts/backup-imip.ps1` cria **três ficheiros SQL locais** e um mani
 - `data.sql` — dados da aplicação (incluindo rodas, MCs, edições, batalhas e pontuação);
 - `manifesto.json` — lista de ficheiros, data, tamanhos e hashes para conferir integridade.
 
-**Atenção:** o comando oficial `supabase db dump` exclui schemas geridos pelo Supabase, incluindo `auth` e `storage`. Esta cópia NÃO contém contas e palavras-passe do Auth nem os ficheiros físicos de imagens/vídeos armazenados nos buckets. É um backup essencial dos dados de negócio, mas **não é, por si só, um restauro completo do IMIP**.
+**Atenção:** consoante a versão da CLI, o ficheiro `data.sql` pode conter instruções de tabelas internas de `storage` e outros schemas. Isso **não equivale a guardar os ficheiros físicos de fotografias/vídeos ou todas as contas Auth**. Esta exportação é essencial, mas **não é um backup integral do IMIP**. O script de teste filtra apenas as tabelas `public` numa cópia temporária, sem alterar o original.
 
 ## Executar no Windows
 
@@ -56,6 +56,17 @@ powershell -ExecutionPolicy Bypass -File .\scripts\testar-restauro-imip.ps1
 - Se houver erro de compatibilidade nas extensões ou no SQL, **o restauro NÃO está validado**; não corrigir a produção para conseguir executar o teste.
 - Limpar os contentores locais evita deixar outra cópia dos dados em execução; em caso de falha de limpeza, rever o Docker Desktop.
 - Um teste SQL bem-sucedido **não valida** recuperação de contas do Supabase Auth, arquivos do Storage ou configurações da Cloudflare.
+
+### Restauro local das tabelas da aplicação
+
+O script `scripts/testar-restauro-imip.ps1` cria uma base de testes no Docker e utiliza `scripts/preparar-dados-publicos-imip.ps1` para gerar um SQL **temporário** com apenas os dados das tabelas `public`. Isto evita que tabelas internas como `storage.buckets_vectors` bloqueiem a importação na instância local.
+
+```powershell
+git pull --ff-only origin main
+powershell -ExecutionPolicy Bypass -File .\scripts\testar-restauro-imip.ps1
+```
+
+O ficheiro original `data.sql` mantém-se intacto. O teste **não valida** a recuperação de contas Auth, ficheiros físicos do Storage nem a importação de `roles.sql`. Em caso de erro, não testar na base de produção.
 
 ## Como verificar se realmente é recuperável
 
