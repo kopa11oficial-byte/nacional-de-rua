@@ -1,0 +1,44 @@
+name: Validar backup no Windows PowerShell 5.1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/backup-imip.ps1"
+      - ".github/workflows/verificar-backup-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validar-script-windows:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar ASCII e sintaxe no PowerShell 5.1 sem segredos
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = (Resolve-Path "./scripts/backup-imip.ps1").Path
+          Write-Host "Windows PowerShell version: $($PSVersionTable.PSVersion)"
+          if ($PSVersionTable.PSVersion.Major -ne 5) {
+            throw "Este teste requer Windows PowerShell 5.1."
+          }
+          $bytes = [System.IO.File]::ReadAllBytes($path)
+          if (@($bytes | Where-Object { $_ -gt 127 }).Count -ne 0) {
+            throw "O script deve conter apenas ASCII para evitar erros de codificacao no Windows PowerShell 5.1."
+          }
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            $path,
+            [ref]$tokens,
+            [ref]$parseErrors
+          ) | Out-Null
+          if ($parseErrors.Count -ne 0) {
+            $parseErrors | ForEach-Object { Write-Host $_.Message }
+            throw "Erros de sintaxe no script."
+          }
+          Write-Host "OK: sintaxe PowerShell 5.1 valida, sem executar backup."
