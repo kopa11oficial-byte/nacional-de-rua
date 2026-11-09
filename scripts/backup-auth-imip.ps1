@@ -12,6 +12,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $projectRef = "fprwitwlvntnlnfqttrl"
+. (Join-Path $PSScriptRoot "validar-ligacao-imip.ps1")
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $pasta = $null
 $ficheiro = $null
@@ -68,16 +69,11 @@ try {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr)
   }
 
-  $uri = $null
-  try { $uri = [System.Uri]::new($dbUrl) } catch {
-    throw "Ligacao PostgreSQL com formato invalido."
-  }
-  if ($uri.Scheme -notin @("postgres","postgresql") -or
-      -not $uri.Host.EndsWith(".supabase.com", [System.StringComparison]::OrdinalIgnoreCase) -or
-      $dbUrl -notlike ("*" + $projectRef + "*") -or
-      $dbUrl -match '\[YOUR-PASSWORD\]') {
-    throw "A ligacao nao corresponde ao PostgreSQL do Nacional de Rua."
-  }
+  # A validacao anterior so aceitava .supabase.com e rejeitava
+  # ligacoes Direct .supabase.co e algumas passwords com caracteres especiais.
+  # A funcao nao revela a ligacao. Usa apenas dados ficticios nos testes CI.
+  $dbUrl = ConvertTo-ImipPgUri -Ligacao $dbUrl -ProjectRef $projectRef
+  Write-Host "Formato PostgreSQL do projeto IMIP validado, sem expor credenciais." -ForegroundColor Green
 
   $carimbo = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HH-mm-ss_UTC")
   $pasta = Join-Path $base ("IMIP-Auth-" + $carimbo)
