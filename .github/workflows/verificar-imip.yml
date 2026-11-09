@@ -23,6 +23,20 @@ jobs:
     steps:
       - name: Obter código
         uses: actions/checkout@v4
+      - name: Verificar sintaxe PowerShell do backup (sem credenciais)
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "./scripts/backup-imip.ps1").Path,
+            [ref]$tokens,
+            [ref]$parseErrors
+          ) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
