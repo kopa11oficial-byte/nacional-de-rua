@@ -24,7 +24,12 @@ function Verificar-Comando([string]$nome) {
 function Executar-Exportacao([string]$nome, [string[]]$opcoes) {
     $destino = Join-Path $folder $nome
     Write-Host ("A criar " + $nome + " ...")
-    & supabase db dump --db-url $dbUrl -f $destino @opcoes
+    if (Get-Command "supabase" -ErrorAction SilentlyContinue) {
+        & supabase db dump --db-url $dbUrl -f $destino @opcoes
+    } else {
+        # npx executa a CLI oficial sem instalacao global, em Windows com Node 20+.
+        & npx.cmd --yes supabase db dump --db-url $dbUrl -f $destino @opcoes
+    }
 
     if ($LASTEXITCODE -ne 0) {
         throw "A exportacao $nome falhou. Nao consideres esta pasta uma copia de seguranca valida."
@@ -36,7 +41,15 @@ function Executar-Exportacao([string]$nome, [string[]]$opcoes) {
 }
 
 try {
-    Verificar-Comando "supabase"
+    if (-not (Get-Command "supabase" -ErrorAction SilentlyContinue)) {
+        Verificar-Comando "node"
+        Verificar-Comando "npx.cmd"
+        $nodeVersion = (& node --version).TrimStart("v")
+        if ([int](($nodeVersion -split "\\.")[0]) -lt 20) {
+            throw "O Supabase via npx precisa de Node.js 20 ou superior."
+        }
+        Write-Host "Supabase CLI global nao instalada: sera usada pelo npx (sem instalacao global)."
+    }
     Verificar-Comando "docker"
 
     & docker info --format '{{.ServerVersion}}' 1> $null 2> $null
