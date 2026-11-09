@@ -1,6 +1,6 @@
 # IMIP — Plano de backup e recuperação (Supabase Free)
 
-**Estado em 9/11/2026:** exportação SQL local concluída, integridade SHA-256 confirmada e segunda cópia fora do computador confirmada pelo responsável. **Restauro das tabelas `public` testado com sucesso numa base local em Docker, com contagens iguais às do backup. Os 23 objetos públicos do Storage foram descarregados e verificados localmente; falta confirmar a segunda cópia externa, o restauro desses objetos, a recuperação de Auth e a importação de roles.**  
+**Estado em 9/11/2026:** exportação SQL local concluída, integridade SHA-256 confirmada e segunda cópia fora do computador confirmada pelo responsável. **Restauro das tabelas `public` testado com sucesso numa base local em Docker, com contagens iguais às do backup. Os 23 objetos públicos do Storage foram descarregados, verificados e copiados para armazenamento externo (confirmado pelo responsável). Faltam testar o restauro de objetos Storage, a recuperação de Auth e a importação de roles.**  
 **Supabase:** `fprwitwlvntnlnfqttrl` (Nacional de Rua).  
 **Custo:** não altera o plano Free.
 
@@ -100,9 +100,36 @@ Para apenas contar objetos sem descarregar nenhum: `powershell -ExecutionPolicy 
 
 Resultado de sucesso esperado: `BACKUP STORAGE CONCLUIDO E FICHEIROS VERIFICADOS`. A pasta `storage-objetos-AAAA-MM-DD_HH-mm-ss_UTC` é criada dentro da pasta do backup SQL já existente, em `backups-local`, excluída do Git. É necessário copiar **também** esta nova pasta para um destino cifrado externo.
 
-**Resultado confirmado — 09/11/2026:** `BACKUP STORAGE CONCLUIDO E FICHEIROS VERIFICADOS` com 23 de 23 objetos, gravados em `backups-local/2026-11-09_08-40-55_UTC/storage-objetos-2026-11-09_11-11-04_UTC/`. O backup local está concluído; **a cópia externa desta pasta ainda não foi confirmada**. Não se verificou ainda um restauro completo de fotografias num novo projeto. 
+**Resultado confirmado — 09/11/2026:** `BACKUP STORAGE CONCLUIDO E FICHEIROS VERIFICADOS` com 23 de 23 objetos, gravados em `backups-local/2026-11-09_08-40-55_UTC/storage-objetos-2026-11-09_11-11-04_UTC/`. O backup local está concluído e **a cópia externa desta pasta foi confirmada pelo responsável** em 09/11/2026. Não se verificou ainda um restauro completo de fotografias num novo projeto. 
 
 **Limites:** o Storage pode ter sido alterado depois do `data.sql` de origem; os objetos descarregados correspondem aos caminhos dessa exportação, não necessariamente a novos objetos adicionados posteriormente. Repetir a exportação SQL antes de novos backups. Este procedimento não recupera automaticamente permissões/políticas de Storage e não cobre buckets privados que venham a ter ficheiros; nesse caso deve ser implementado download autenticado, sem abrir o bucket ao público. Não foi realizado um teste integral de restauro dos ficheiros no projeto.
+## Recuperação das 20 contas de acesso (Supabase Auth)
+
+**Auditoria de leitura de 9/11/2026:** 20 contas em `auth.users` com email confirmado, 20 identidades de email e 18 contas ligadas a pelo menos um registo nas tabelas `administradores`, `mcs`, `organizacoes`, `suportes_imip` e `suportes_regionais_imip`. Foram identificadas 2 contas sem associação explícita nessas tabelas; **não devem ser apagadas nem corrigidas automaticamente**, porque podem ter outros usos ou estar em transição. Não foram encontradas referências a utilizadores inexistentes nessas tabelas.
+
+Metadados do campo `raw_app_meta_data.tipo_acesso`: 11 contas `mc`, 6 contas `organizacao`, 3 sem esse campo. É um levantamento, não uma autorização para mudar tipos ou acessos.
+
+### Inventário privado de recuperação
+
+O ficheiro [database/auditoria-recuperacao-auth.sql](../database/auditoria-recuperacao-auth.sql) contém uma consulta **SELECT** para o SQL Editor do Supabase: apresenta UUID Auth, email, confirmação, tipo de acesso e as ligações aos perfis de MC, organização, administração e suporte.
+
+1. Abrir o projeto IMIP no Supabase → SQL Editor.
+2. Copiar e executar **somente a consulta SELECT** desse ficheiro. Não há `UPDATE`, `DELETE` nem `INSERT`.
+3. Exportar o resultado para CSV se o editor disponibilizar essa opção; caso contrário, guardar a listagem com cuidado num ficheiro local protegido. A listagem contém emails e IDs de utilizadores: **não enviar para este chat, GitHub, Cloudflare ou serviços públicos**.
+4. Guardar uma segunda cópia cifrada fora do computador e confirmar que contém as 20 linhas.
+
+**Importante:** esse CSV é um **inventário de recuperação**, não contém palavras-passe ou hashes, e não permite reconstruir automaticamente sessões ou o serviço Auth. O backup principal via `supabase db dump` não cobre integralmente o schema Auth.
+
+### Procedimento de contingência — em caso de perda do projeto
+
+1. Restaurar a estrutura e os dados `public` numa instância nova, sem apagar o projeto original se ainda estiver disponível.
+2. Recuperar a estrutura e os dados Auth por um método oficialmente suportado e testado antes de aceitar utilizadores; confirmar IDs e emails. **Nunca inserir diretamente em `auth.users` nem alterar hashes/passwords a partir de SQL artesanal.**
+3. Se o método suportado não preservar UUIDs, reconstruir as ligações `auth_user_id` de MCs, organizações e suportes com base no inventário e numa correspondência de email verificada. Não substituir IDs em massa sem confirmação de identidade.
+4. Restaurar os 23 objetos com os mesmos caminhos e políticas de buckets, testar acesso público e privacidade. O download validado das imagens **não é**, por si só, um teste de upload/restauro.
+5. Configurar os redirect URLs e as chaves de Auth do ambiente novo, com segredos gerados para esse ambiente. Testar recuperação de password e novos convites.
+6. Fazer testes reais de login, autorizações RLS e alteração de perfil com um MC, uma organização e um suporte antes de qualquer mudança de DNS/Cloudflare.
+
+Este plano de contingência evita perder a correspondência entre utilizadores e perfis, mas **não equivale a um restauro integral de Auth já testado**. Um procedimento de importação de utilizadores deve ser validado separadamente num ambiente de testes, com aprovação explícita, antes de qualquer migração.
 ## Como verificar se realmente é recuperável
 
 1. **Nunca testar o restauro na base de dados de produção.**
