@@ -75,4 +75,6 @@ jobs:
           Add-Content -LiteralPath (Join-Path $pasta 'data.sql') -Value '-- ALTERADO' -Encoding ASCII
           & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Pasta $pasta
           if ($LASTEXITCODE -ne 1) { throw 'O verificador nao detetou o ficheiro alterado.' }
+          # O erro 1 e esperado neste teste negativo; limpar o codigo para o runner.
+          $global:LASTEXITCODE = 0
           Write-Host 'OK: backup valido aceite e ficheiro modificado recusado.'
