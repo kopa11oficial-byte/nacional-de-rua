@@ -2,6 +2,10 @@
 
 Circuito de rodas de improviso, perfis de MCs, batalhas, pontuação, rankings e Final Nacional.
 
+**Estado: versão 1.0 com fecho funcional aceite em 09/11/2026.** O trabalho continua depois do fecho: manutenção, novas edições e melhorias são parte normal do projeto. A ativação e a verificação do domínio definitivo são uma etapa de publicação separada.
+
+[Registo do fecho funcional e plano de passagem para o domínio oficial](docs/fecho-versao-1-nacional-de-rua.md).
+
 ## Domínio oficial
 
 **https://nacionalderua.pt**
