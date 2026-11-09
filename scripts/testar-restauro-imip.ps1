@@ -97,51 +97,15 @@ try {
         $query = "SELECT (SELECT COUNT(*) FROM public.rodas), (SELECT COUNT(*) FROM public.mcs), (SELECT COUNT(*) FROM public.edicoes), (SELECT COUNT(*) FROM public.edicoes WHERE estado = 'publicada'), (SELECT COUNT(*) FROM public.pontuacoes);"
         $linhas = @(& docker exec $contentor psql -U postgres -d postgres --tuples-only --no-align --field-separator="|" --command=$query)
         if ($LASTEXITCODE -ne 0) { throw "Nao foi possivel verificar as tabelas restauradas." }
-        $numeros = @($linhas | Where-Object { $_ -match '^[0-9]+\|[0-9]+\|[0-9]+\|[0-9]+\|[0-9]+
-        Write-Host "NOTA: o SQL de teste incluiu apenas tabelas public (sem Auth/Storage)." -ForegroundColor Yellow
-        Write-Host "NOTA: este teste usa os papeis internos locais; roles.sql NAO foi restaurado." -ForegroundColor Yellow
-        Write-Host "NOTA: este teste nao inclui contas Auth nem ficheiros do Storage." -ForegroundColor Yellow
-        $sucesso = $true
-    } finally {
-        # Somente a instancia de testes, criada num diretorio temporario.
-        if ($localCriado) {
-            Write-Host "A desligar a base LOCAL temporaria..."
-            & npx.cmd --yes supabase stop --no-backup
-            $limpezaOk = $LASTEXITCODE -eq 0
-        }
-        Pop-Location
-    }
-}
-catch {
-    $erroPrincipal = $_.Exception.Message
-}
-finally {
-    if ($localCriado -and $limpezaOk) {
-        Remove-Item -LiteralPath $pastaIsolada -Recurse -Force -ErrorAction SilentlyContinue
-    }
-    if ($localCriado -and -not $limpezaOk) {
-        Write-Host ("A limpeza automatica nao foi confirmada; reve a instancia local " + $nomeInstancia) -ForegroundColor Yellow
-    }
-}
-
-if ($null -ne $erroPrincipal) {
-    Write-Host ("RESTAURO NAO VALIDADO: " + $erroPrincipal) -ForegroundColor Red
-    exit 1
-}
-if (-not $sucesso -or -not $limpezaOk) {
-    Write-Host "RESTAURO NAO VALIDADO: a limpeza da instancia de testes precisa de verificacao." -ForegroundColor Red
-    exit 1
-}
-Write-Host "TESTE CONCLUIDO E INSTANCIA TEMPORARIA REMOVIDA" -ForegroundColor Green
- })
+        $numeros = @($linhas | Where-Object { $_ -match '^[0-9]+\|[0-9]+\|[0-9]+\|[0-9]+\|[0-9]+$' })
         if ($numeros.Count -ne 1) { throw "A leitura dos totais restaurados foi inesperada." }
         $valores = @($numeros[0].Split("|") | ForEach-Object { [int]$_ })
         if ($valores.Count -ne 5 -or @($valores | Where-Object { $_ -le 0 }).Count -gt 0) {
             throw "Uma das tabelas principais ficou vazia na base restaurada."
         }
 
-        # Comparar com todos os registos COPY guardados na exportacao,
-        # nao com totais atuais da producao que poderao ter mudado.
+        # Comparar com os registos COPY do momento da exportacao.
+        # Nao comparar com a producao atual, que pode ter mudado.
         $resumo = Get-Content -LiteralPath ($dadosPublicos + ".contagens.json") -Raw -Encoding UTF8 | ConvertFrom-Json
         $nomes = @("rodas","mcs","edicoes","pontuacoes")
         $indices = @(0,1,2,4)
@@ -157,7 +121,7 @@ Write-Host "TESTE CONCLUIDO E INSTANCIA TEMPORARIA REMOVIDA" -ForegroundColor Gr
         Write-Host ""
         Write-Host "RESTAURO SQL LOCAL CONCLUIDO" -ForegroundColor Green
         Write-Host ("Rodas: " + $valores[0] + "; MCs: " + $valores[1] + "; Edicoes: " + $valores[2] + " (publicadas: " + $valores[3] + "); Pontuacoes: " + $valores[4])
-        Write-Host "Totais das 4 tabelas principais correspondem exatamente ao SQL original." -ForegroundColor Green
+        Write-Host "As 4 contagens principais conferem com a exportacao original." -ForegroundColor Green
         Write-Host "NOTA: o SQL de teste incluiu apenas tabelas public (sem Auth/Storage)." -ForegroundColor Yellow
         Write-Host "NOTA: este teste usa os papeis internos locais; roles.sql NAO foi restaurado." -ForegroundColor Yellow
         Write-Host "NOTA: este teste nao inclui contas Auth nem ficheiros do Storage." -ForegroundColor Yellow
