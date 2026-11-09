@@ -18,6 +18,7 @@ $blocosPublicos = 0
 $blocosIgnorados = 0
 $contagens = @{}
 $linhaNumero = 0
+$comandosOmitidos = @{}
 $terminou = $false
 
 try {
@@ -89,7 +90,31 @@ try {
             continue
         }
 
-        throw ("Comando inesperado fora de COPY na linha " + $linhaNumero + ". Nao se omitem instrucoes desconhecidas.")
+        # Este filtro NAO executa SQL desconhecido. O restauro de dados
+        # da aplicacao e feito exclusivamente a partir de COPY public.*
+        # e de sequencias public.* explicitamente reconhecidas.
+        # DML fora de COPY pode conter dados que nao seriam recuperados:
+        # falhar em vez de fingir que o backup ficou completo.
+        if ($linha -match '^\s*(?:INSERT|UPDATE|DELETE|MERGE|TRUNCATE|REPLACE|UPSERT)\b') {
+            $tipo = $Matches[0].Trim()
+            throw ("Comando de dados " + $tipo + " fora de COPY, na linha " + $linhaNumero + ". Teste interrompido.")
+        }
+
+        # Dump pg_dump pode ter instrucoes de configuracao, grants,
+        # comentarios e metacomandos entre os blocos de dados. Esses
+        # comandos ficam fora do SQL temporario, nunca sao executados.
+        # Mostrar apenas a categoria e numero de linha, sem dados.
+        $trimmed = $linha.TrimStart()
+        $tipo = "OUTRO"
+        if ($trimmed -match '^([A-Za-z_][A-Za-z_0-9]*)\b') {
+            $tipo = $Matches[1].ToUpperInvariant()
+        } elseif ($trimmed.StartsWith("\")) {
+            $tipo = "META_PSQL"
+        }
+        if (-not $comandosOmitidos.ContainsKey($tipo)) {
+            $comandosOmitidos[$tipo] = 0
+        }
+        $comandosOmitidos[$tipo] += 1
     }
 
     if ($emCopia) { throw "Bloco COPY terminou sem linha de fecho. Exportacao incompleta." }
@@ -105,6 +130,17 @@ try {
     foreach ($nome in @("rodas","mcs","edicoes","pontuacoes")) {
         Write-Host ("Backup public." + $nome + ": " + $contagens[$nome] + " linhas")
     }
+    if ($comandosOmitidos.Count -gt 0) {
+        Write-Host "Instrucoes fora de COPY omitidas (apenas categorias, nunca dados):" -ForegroundColor Yellow
+        foreach ($tipo in @($comandosOmitidos.Keys | Sort-Object)) {
+            Write-Host ("  " + $tipo + ": " + $comandosOmitidos[$tipo])
+        }
+        Write-Host "Estas instrucoes NAO foram testadas como parte da recuperacao SQL." -ForegroundColor Yellow
+    }
+    # Contagens esperadas para comparar com a base restaurada.
+    # Guardadas apenas na pasta local temporaria; sem linhas do backup.
+    $resumoPath = $destinoReal + ".contagens.json"
+    $contagens | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $resumoPath -Encoding UTF8
     $terminou = $true
 } catch {
     Write-Host ("FALHA AO PREPARAR DADOS: " + $_.Exception.Message) -ForegroundColor Red
@@ -113,6 +149,10 @@ try {
     if ($null -ne $escritor) { $escritor.Dispose() }
     if (-not $terminou -and (Test-Path -LiteralPath $Destino -PathType Leaf)) {
         Remove-Item -LiteralPath $Destino -Force -ErrorAction SilentlyContinue
+    }
+    $resumoPath = $Destino + ".contagens.json"
+    if (-not $terminou -and (Test-Path -LiteralPath $resumoPath -PathType Leaf)) {
+        Remove-Item -LiteralPath $resumoPath -Force -ErrorAction SilentlyContinue
     }
 }
 
