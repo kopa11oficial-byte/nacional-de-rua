@@ -39,6 +39,9 @@ yarn-error.log*
 
 # Copias de seguranca e arquivos
 *.zip
+/backups-local/
+/backups/
+
 nacional-de-rua-perfil-publico/
 
 # Ficheiros temporarios
