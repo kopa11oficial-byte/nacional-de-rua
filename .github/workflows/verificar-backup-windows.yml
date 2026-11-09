@@ -8,6 +8,7 @@ on:
       - "scripts/backup-imip.ps1"
       - "scripts/verificar-backup-imip.ps1"
       - "scripts/testar-restauro-imip.ps1"
+      - "scripts/preparar-dados-publicos-imip.ps1"
       - ".github/workflows/verificar-backup-windows.yml"
 
 permissions:
@@ -63,6 +64,68 @@ jobs:
             throw "Sintaxe invalida no teste de restauro."
           }
           Write-Host "OK: sintaxe do teste de restauro validada em PowerShell 5.1."
+      - name: Testar selecao de public SQL sem dados internos
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = (Resolve-Path "./scripts/preparar-dados-publicos-imip.ps1").Path
+          $bytes = [System.IO.File]::ReadAllBytes($script)
+          if (@($bytes | Where-Object { $_ -gt 127 }).Count -ne 0) { throw "O filtro nao e ASCII." }
+          $tokens = $null
+          $erros = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$erros) | Out-Null
+          if ($erros.Count -ne 0) { throw "Erro de sintaxe no preparador SQL." }
+          $dir = Join-Path $env:RUNNER_TEMP 'imip-sql-fixture'
+          New-Item -ItemType Directory -Path $dir -Force | Out-Null
+          $entrada = Join-Path $dir 'data.sql'
+          $saida = Join-Path $dir 'data-publico.sql'
+          @(
+            '-- pg_dump ficticio'
+            'SET statement_timeout = 0;'
+            'COPY public.rodas (id, nome) FROM stdin;'
+            ('r1' + [char]9 + 'Roda teste')
+            '\.'
+            'COPY public.mcs (id, nome) FROM stdin;'
+            ('m1' + [char]9 + 'MC teste')
+            '\.'
+            'COPY storage.buckets_vectors (id) FROM stdin;'
+            'segredo-interno-de-teste'
+            '\.'
+            'COPY auth.users (id) FROM stdin;'
+            'user-interno-de-teste'
+            '\.'
+            'COPY public.edicoes (id) FROM stdin;'
+            'e1'
+            '\.'
+            'COPY public.pontuacoes (id) FROM stdin;'
+            'p1'
+            '\.'
+            "SELECT pg_catalog.setval('public.roda_seq', 42, true);"
+            "SELECT pg_catalog.setval('storage.bucket_seq', 2, true);"
+          ) | Set-Content -LiteralPath $entrada -Encoding UTF8
+          $hashAntes = (Get-FileHash -LiteralPath $entrada -Algorithm SHA256).Hash
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Origem $entrada -Destino $saida
+          if ($LASTEXITCODE -ne 0) { throw "Nao preparou os dados public." }
+          $resultado = Get-Content -LiteralPath $saida -Raw -Encoding UTF8
+          if ($resultado -notmatch 'COPY public\.mcs' -or
+              $resultado -notmatch 'COPY public\.rodas' -or
+              $resultado -notmatch "setval\('public.roda_seq'") {
+            throw "O preparador perdeu dados public."
+          }
+          if ($resultado -match 'storage\.' -or $resultado -match 'auth\.') {
+            throw "O preparador deixou entrar dados internos."
+          }
+          if ($resultado -match 'segredo-interno-de-teste' -or $resultado -match 'user-interno-de-teste') {
+            throw "O preparador deixou entrar linhas de tabelas internas."
+          }
+          if ((Get-FileHash -LiteralPath $entrada -Algorithm SHA256).Hash -ne $hashAntes) {
+            throw "A exportacao original foi alterada."
+          }
+          Add-Content -LiteralPath $entrada -Value 'DELETE FROM public.mcs;' -Encoding UTF8
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Origem $entrada -Destino $saida
+          if ($LASTEXITCODE -ne 1) { throw "O preparador nao bloqueou SQL desconhecido." }
+          $global:LASTEXITCODE = 0
+          Write-Host "OK: apenas public restauravel, dados internos excluidos e comandos inesperados bloqueados."
       - name: Validar sintaxe do verificador e simular integridade de ficheiros
         shell: powershell
         run: |
