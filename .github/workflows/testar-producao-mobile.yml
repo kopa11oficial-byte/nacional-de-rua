@@ -7,6 +7,12 @@ on:
     paths:
       - ".github/workflows/testar-producao-mobile.yml"
       - "scripts/testar-producao-mobile.mjs"
+      - "app/**"
+      - "lib/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "wrangler.jsonc"
 
 permissions:
   contents: read
