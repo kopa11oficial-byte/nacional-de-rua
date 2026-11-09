@@ -1,6 +1,6 @@
 # IMIP — Plano de backup e recuperação (Supabase Free)
 
-**Estado em 9/11/2026:** exportação SQL local concluída, integridade SHA-256 confirmada e segunda cópia fora do computador confirmada pelo responsável. **O restauro ainda não foi testado e Auth/Storage não fazem parte desta exportação.**  
+**Estado em 9/11/2026:** exportação SQL local concluída, integridade SHA-256 confirmada e segunda cópia fora do computador confirmada pelo responsável. **Restauro das tabelas `public` testado com sucesso numa base local em Docker, com contagens iguais às do backup. Auth, Storage e importação de roles ainda não foram validados.**  
 **Supabase:** `fprwitwlvntnlnfqttrl` (Nacional de Rua).  
 **Custo:** não altera o plano Free.
 
@@ -42,7 +42,7 @@ O script **não altera a base de dados** e o diretório `backups-local/` é igno
 
 ## Teste local isolado no Windows (sem tocar na produção)
 
-Foi criado o script `scripts/testar-restauro-imip.ps1`, que valida os hashes do backup, inicia uma base Supabase PostgreSQL **temporária no Docker**, importa os três ficheiros SQL, verifica os totais de rodas, MCs, edições publicadas e pontuações e remove a instância de teste no final.
+Foi criado o script `scripts/testar-restauro-imip.ps1`, que valida os hashes do backup, inicia uma base Supabase PostgreSQL **temporária no Docker**, importa `schema.sql` e uma versão temporária de `data.sql` limitada às tabelas `public`, verifica os totais de rodas, MCs, edições publicadas e pontuações e remove a instância de teste no final.
 
 Executar na pasta do projeto, com Docker Desktop em execução:
 
@@ -68,6 +68,21 @@ powershell -ExecutionPolicy Bypass -File .\scripts\testar-restauro-imip.ps1
 
 O ficheiro original `data.sql` mantém-se intacto. O teste **não valida** a recuperação de contas Auth, ficheiros físicos do Storage nem a importação de `roles.sql`. Em caso de erro, não testar na base de produção.
 
+### Resultado confirmado — 9 de novembro de 2026
+
+Execução real do teste local confirmada por captura do terminal do responsável:
+
+| Tabela | Registos recuperados |
+|---|---:|
+| `public.rodas` | 27 |
+| `public.mcs` | 168 |
+| `public.edicoes` | 14 (13 publicadas) |
+| `public.pontuacoes` | 321 |
+
+O script confirmou que os totais destas quatro tabelas coincidem com a exportação original, apresentou `RESTAURO SQL LOCAL CONCLUIDO` e concluiu com `TESTE CONCLUIDO E INSTANCIA TEMPORARIA REMOVIDA`. O backup original permaneceu inalterado, confirmado previamente por hashes SHA-256. A segunda cópia em armazenamento externo foi confirmada pelo responsável.
+
+**Alcance:** recuperação local dos dados da aplicação nas tabelas `public`, não recuperação integral do projeto. O teste não importou `roles.sql` e não comprovou restauro das contas Auth, dos ficheiros físicos do Storage nem das configurações da Cloudflare.
+
 ## Como verificar se realmente é recuperável
 
 1. **Nunca testar o restauro na base de dados de produção.**
@@ -86,4 +101,4 @@ O ficheiro original `data.sql` mantém-se intacto. O teste **não valida** a rec
 **Backup concluído** = ficheiros SQL exportados e copiados em armazenamento seguro **fora do Supabase**.  
 **Recuperação confirmada** = restauro validado num ambiente separado **e** plano documentado para Auth e Storage.
 
-Até estas condições se verificarem, não afirmar que o projeto dispõe de um backup integral recuperável.
+Os dados da aplicação `public` já passaram num teste real de restauro local. Ainda não afirmar que o projeto dispõe de um backup **integral** recuperável até haver plano e testes para Auth, Storage e privilégios.
