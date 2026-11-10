@@ -146,7 +146,7 @@ function useRankingPrincipal(ano: number) {
             return (
               anoEdicao === ano &&
               mes >= 1 &&
-              (ano === 2026 || (mes <= 10 && edicao.estado === "publicada"))
+              edicao.estado === "publicada" && (ano === 2026 || mes <= 10)
             );
           })
           .map((edicao) => edicao.id);
