@@ -172,12 +172,12 @@ export default function CentralComunicacaoImip() {
           <section className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" aria-label="Cinco suportes IMIP">
             {REGIOES_IMIP.map((r, i) => (
               <article key={r.id} className="flex items-center gap-3 border border-white/20 bg-black/70 p-3">
-                <Image src={imagens[i]} width={56} height={56} alt="" className="h-14 w-14 shrink-0 object-contain" />
+                <Image unoptimized src={imagens[i]} width={56} height={56} alt="" className="h-14 w-14 shrink-0 object-contain" />
                 <div><p className="text-xs font-black">SUPORTE {r.nome.toUpperCase()}</p><p className="text-[10px] text-zinc-400">Regional</p></div>
               </article>
             ))}
             <article className="flex items-center gap-3 border border-[#d6b56d]/50 bg-black/70 p-3">
-              <Image src="/suportes/SUPORTE_GERAL.png" width={56} height={56} alt="" className="h-14 w-14 shrink-0 object-contain" />
+              <Image unoptimized src="/suportes/SUPORTE_GERAL.png" width={56} height={56} alt="" className="h-14 w-14 shrink-0 object-contain" />
               <div><p className="text-xs font-black">SUPORTE GERAL</p><p className="text-[10px] text-zinc-400">Coordenação</p></div>
             </article>
           </section>
