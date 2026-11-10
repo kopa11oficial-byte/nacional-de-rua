@@ -23,7 +23,7 @@ function responder(status: number, dados: Record<string, unknown>) {
 }
 
 export async function POST(request: NextRequest) {
-  const token = request.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return responder(401, { erro: "Inicia sessão com uma conta de suporte autorizada." });
 
   try {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (
       email.length > 254 ||
-      !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
       typeof regiao !== "string" ||
       !REGIOES.includes(regiao as (typeof REGIOES)[number])
     ) {
