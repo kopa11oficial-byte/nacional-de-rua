@@ -566,16 +566,16 @@ export default function Home() {
 
       <header className="relative z-30 border-b border-[#d0ae69]/40 bg-[#070a08] px-4 sm:px-8 lg:px-[5vw]">
 
-        <div className="mx-auto flex min-h-[92px] max-w-[1700px] items-center justify-between gap-3 py-3">
+        <div className="mx-auto flex min-h-[92px] max-w-[1700px] flex-col gap-4 py-5 sm:py-4 xl:flex-row xl:items-center xl:justify-between xl:gap-3">
 
           {/* LOGÓTIPO OFICIAL COMPLETO */}
 
           <a
             href="/"
             aria-label="Nacional de Rua — página inicial"
-            className="flex min-w-0 items-center gap-3"
+            className="flex w-full min-w-0 items-center gap-3 xl:w-auto"
           >
-            <span className="relative block h-[82px] w-[70px] shrink-0">
+            <span className="relative block h-[72px] w-[62px] shrink-0 sm:h-[82px] sm:w-[70px]">
               <Image
                 src="/logo-portugal.png"
                 alt="Logótipo oficial do Improviso Made in Portugal"
@@ -589,7 +589,7 @@ export default function Home() {
             <span className="min-w-0">
 
               <span
-                className={`${boldIMIP.className} block text-base font-bold uppercase leading-tight tracking-[0.035em] sm:text-xl`}
+                className={`${boldIMIP.className} block whitespace-nowrap text-[clamp(0.83rem,3.7vw,1.22rem)] font-bold uppercase leading-tight tracking-[0.015em] sm:text-xl sm:tracking-[0.035em]`}
               >
                 NACIONAL{" "}
                 <span className="text-[#e0bf71]">
@@ -597,7 +597,7 @@ export default function Home() {
                 </span>
               </span>
 
-              <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.11em] text-[#ccb77f] sm:text-[10px]">
+              <span className="mt-1 block text-[clamp(0.57rem,2.5vw,0.72rem)] font-medium leading-snug tracking-[0.015em] text-[#ccb77f] sm:font-bold sm:uppercase sm:tracking-[0.11em]">
                 IMIP · IMPROVISO MADE IN PORTUGAL
               </span>
             </span>
@@ -662,15 +662,15 @@ export default function Home() {
 
           {/* NAVEGAÇÃO COMPACTA */}
 
-          <div className="flex shrink-0 items-center gap-2 xl:hidden">
+          <div className="grid w-full grid-cols-2 gap-3 xl:hidden">
             {/* Menu nativo: também funciona sem JavaScript no telemóvel. */}
-            <details className="group relative">
-              <summary className="flex min-h-12 cursor-pointer list-none items-center gap-1 border border-[#d4ad61]/65 px-3 py-2 text-xs font-black uppercase text-[#e0bf71] [&::-webkit-details-marker]:hidden">
+            <details className="group relative min-w-0">
+              <summary className="flex min-h-12 w-full cursor-pointer list-none items-center justify-center gap-2 border border-[#d4ad61]/65 px-3 py-2 text-sm font-black uppercase text-[#e0bf71] [&::-webkit-details-marker]:hidden">
                 Menu <span aria-hidden="true" className="transition-transform group-open:rotate-180">▾</span>
               </summary>
               <nav
                 aria-label="Navegação móvel"
-                className="absolute right-0 top-full z-50 mt-2 w-[min(86vw,17rem)] border border-[#d4ad61] bg-[#090d0b] p-2 shadow-2xl"
+                className="absolute left-0 top-full z-[70] mt-2 w-[min(86vw,18rem)] max-w-[calc(100vw-2rem)] border border-[#d4ad61] bg-[#090d0b] p-2 shadow-2xl"
               >
                 {[
                   { href: "/ranking", nome: "Ranking" },
@@ -692,7 +692,7 @@ export default function Home() {
             </details>
             <a
               href="/organizacao/login"
-              className="flex min-h-12 items-center border border-[#d4ad61]/65 px-3 py-2 text-xs font-black uppercase text-[#e0bf71]"
+              className="flex min-h-12 min-w-0 items-center justify-center border border-[#d4ad61]/65 px-3 py-2 text-sm font-black uppercase text-[#e0bf71]"
             >
               Entrar ↗
             </a>
