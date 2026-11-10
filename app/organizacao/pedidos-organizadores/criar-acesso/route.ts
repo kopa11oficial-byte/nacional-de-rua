@@ -32,7 +32,7 @@ type SituacaoTransacao =
   | "incerta";
 
 const URL_RECUPERACAO =
-  "https://nacional-de-rua.rodasdeimproviso.workers.dev/organizacao/repor-password";
+  "https://www.nacionalderua.pt/organizacao/repor-password";
 
 function responder(
   status: number,
