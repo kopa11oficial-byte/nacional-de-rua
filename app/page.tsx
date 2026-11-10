@@ -564,7 +564,7 @@ export default function Home() {
           CABEÇALHO
           ===================================== */}
 
-      <header className="relative z-10 border-b border-[#d0ae69]/40 bg-[#070a08] px-4 sm:px-8 lg:px-[5vw]">
+      <header className="relative z-30 border-b border-[#d0ae69]/40 bg-[#070a08] px-4 sm:px-8 lg:px-[5vw]">
 
         <div className="mx-auto flex min-h-[92px] max-w-[1700px] items-center justify-between gap-3 py-3">
 
