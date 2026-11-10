@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { boldIMIP, veneerIMIP } from "./fonts/identidade";
 import { supabase } from "../lib/supabase";
 import { consultarTodas } from "../lib/consultar-todas";
+import PesquisaGlobal from "./pesquisa-global";
 
 /*
   NACIONAL DE RUA — IMIP
@@ -698,6 +699,8 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      <PesquisaGlobal />
 
       {/* =====================================
           ABERTURA PRINCIPAL
