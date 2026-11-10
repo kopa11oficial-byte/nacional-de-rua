@@ -266,10 +266,14 @@ function pertenceA(
 function zonaDaRoda(roda: Roda): ZonaId {
   const nome = normalizar(roda.nome);
 
-  // NORTE — Batalha 45
+  // NORTE — Batalha 45 / Batalha 4Cincoo.
+  // É uma atribuição por tradição, independentemente do distrito.
+  // A roda está registada em Espinho (Aveiro), mas pertence à zona Norte do IMIP.
 
   if (
-    /\bbatalha\s*45\b/.test(nome)
+    roda.id === "1c59231f-124b-4709-9d0d-4d80fad0833f" ||
+    /\bbatalha\s*45\b/.test(nome) ||
+    /\bbatalha\s*4\s*cincoo\b/.test(nome)
   ) {
     return "norte";
   }
