@@ -65,7 +65,7 @@ jobs:
           set +e
           falhas=0
           for volta in 1 2; do
-            for caminho in / /organizacao/suporte /organizacao/login /ranking; do
+            for caminho in / /organizacao/suporte /organizacao/login /ranking /rodas/1c59231f-124b-4709-9d0d-4d80fad0833f /mcs/bf023ad8-f714-42f9-bc84-b4f6318c2b54; do
               url="https://www.nacionalderua.pt${caminho}"
               resposta=$(curl -sS -L --max-time 25 -o /tmp/nacionalderua-teste.html -w "%{http_code} %{time_total}" "$url")
               codigo=$(echo "$resposta" | awk '{print $1}')
