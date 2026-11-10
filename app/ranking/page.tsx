@@ -345,13 +345,13 @@ export default function RankingPage() {
             }
 
             if (periodo === "anual") {
-              return ano === 2026 || (mes <= 10 && edicao.estado === "publicada");
+              return edicao.estado === "publicada" && (ano === 2026 || mes <= 10);
             }
 
             const temporada = temporadas[periodo];
 
             return (
-              (ano === 2026 || edicao.estado === "publicada") &&
+              edicao.estado === "publicada" &&
               mes <= (ano === 2026 ? 12 : 10) &&
               mes >= temporada.inicio &&
               mes <= temporada.fim
