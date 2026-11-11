@@ -254,26 +254,29 @@ export default function ReporPasswordPage() {
         */
 
         if (codigo) {
-          const { error } =
-            await supabase.auth.exchangeCodeForSession(
-              codigo,
-            );
+          // detectSessionInUrl do cliente Supabase já troca o código
+          // de utilização única durante a inicialização.
+          // Repetir exchangeCodeForSession invalida a recuperação.
+          const {
+            data: { session },
+            error: erroSessao,
+          } = await supabase.auth.getSession();
 
-          if (error) {
-            if (
-              recuperacaoConfirmada.current
-            ) {
-              limparUrl();
-              return;
-            }
-
+          if (erroSessao || !session?.access_token) {
             throw new Error(
               "Não foi possível validar o código de recuperação. Pede um novo link.",
             );
           }
 
-          if (!ativo) return;
+          const { data: identidade, error: erroIdentidade } =
+            await supabase.auth.getUser();
+          if (erroIdentidade || !identidade.user) {
+            throw new Error(
+              "Não foi possível validar a sessão de recuperação. Pede um novo link.",
+            );
+          }
 
+          if (!ativo) return;
           limparUrl();
           confirmarSessao();
           return;
