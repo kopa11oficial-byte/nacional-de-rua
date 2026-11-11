@@ -103,29 +103,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Guardar primeiro a password. Se a operação falhar, o novo suporte
-    // permanece sem privilégios. Não remover ainda o convite pendente:
-    // assim a ativação pode ser repetida caso o passo seguinte falhe.
-    const { error: erroAtualizacao } =
-      await supabaseAdmin.auth.admin.updateUserById(utilizador.id, {
-        password: corpo.password,
-        app_metadata: {
-          ...appMetadataAtual,
-          alterar_password_primeiro_acesso: false,
-        },
-      });
-
-    if (erroAtualizacao) {
-      console.error("IMIP: erro ao definir palavra-passe.", erroAtualizacao.code);
-      return responder(
-        400,
-        "Não foi possível guardar a palavra-passe. Confirma os requisitos e tenta novamente.",
-      );
-    }
-
+    // Ativar a função de suporte antes de alterar a password.
+    // A alteração de credenciais pode invalidar a sessão do convite;
+    // neste caso a função regional não deve ficar pendente.
+    let suporteNovo = false;
     if (conviteSuporte) {
-      // Só uma pessoa que recebeu o convite da equipa e confirmou o
-      // próprio email consegue chegar a este passo com a sua sessão.
+      const { data: suporteExistente, error: erroLeituraSuporte } = await supabaseAdmin
+        .from("suportes_regionais_imip")
+        .select("auth_user_id")
+        .eq("auth_user_id", utilizador.id)
+        .maybeSingle();
+
+      if (erroLeituraSuporte) {
+        console.error("IMIP: falha ao consultar suporte antes da ativação.", erroLeituraSuporte.code);
+        return responder(503, "Não foi possível confirmar a ativação do suporte. Tenta novamente.");
+      }
+
+      suporteNovo = !suporteExistente;
       const { error: erroAtivacao } = await supabaseAdmin
         .from("suportes_regionais_imip")
         .upsert(
@@ -139,29 +133,43 @@ export async function POST(request: NextRequest) {
         );
 
       if (erroAtivacao) {
-        console.error("IMIP: palavra-passe definida, mas falhou a ativação do suporte.", erroAtivacao.code);
-        return responder(
-          503,
-          "A palavra-passe foi guardada, mas o acesso de suporte não pôde ser ativado. Repete o processo com esta sessão ou contacta o suporte IMIP.",
-        );
+        console.error("IMIP: falha na ativação do suporte antes da password.", erroAtivacao.code);
+        return responder(503, "Não foi possível ativar o suporte. A palavra-passe ainda não foi alterada.");
       }
+    }
 
-      // Só depois de ativar limpar o convite. Não alterar nem remover o
-      // perfil MC ou outras funções já existentes na mesma conta.
-      const { error: erroLimpeza } =
-        await supabaseAdmin.auth.admin.updateUserById(utilizador.id, {
-          app_metadata: {
-            ...appMetadataAtual,
-            alterar_password_primeiro_acesso: false,
-            convite_suporte_pendente: false,
-            convite_suporte_regiao: null,
-          },
-        });
-      if (erroLimpeza) {
-        // A função já foi ativada; reportar apenas no log para não
-        // induzir o utilizador a repetir a ativação com um novo convite.
-        console.error("IMIP: suporte ativo, mas não foi possível limpar o convite.", erroLimpeza.code);
+    // Guardar a palavra-passe e finalizar o convite na mesma atualização.
+    const { error: erroAtualizacao } =
+      await supabaseAdmin.auth.admin.updateUserById(utilizador.id, {
+        password: corpo.password,
+        app_metadata: {
+          ...appMetadataAtual,
+          alterar_password_primeiro_acesso: false,
+          ...(conviteSuporte
+            ? {
+                convite_suporte_pendente: false,
+                convite_suporte_regiao: null,
+              }
+            : {}),
+        },
+      });
+
+    if (erroAtualizacao) {
+      // Não deixar uma associação nova ativa quando a password falha.
+      if (conviteSuporte && suporteNovo) {
+        const { error: erroReversao } = await supabaseAdmin
+          .from("suportes_regionais_imip")
+          .delete()
+          .eq("auth_user_id", utilizador.id);
+        if (erroReversao) {
+          console.error("IMIP: falha a reverter ativação incompleta.", erroReversao.code);
+        }
       }
+      console.error("IMIP: erro ao definir palavra-passe.", erroAtualizacao.code);
+      return responder(
+        400,
+        "Não foi possível guardar a palavra-passe. Confirma os requisitos e tenta novamente.",
+      );
     }
 
     return NextResponse.json(
