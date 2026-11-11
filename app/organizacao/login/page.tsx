@@ -180,7 +180,7 @@ export default function LoginOrganizacaoPage() {
         await supabase.auth.resetPasswordForEmail(
           email.trim(),
           {
-            redirectTo: `${window.location.origin}/organizacao/repor-password`,
+            redirectTo: "https://www.nacionalderua.pt/organizacao/repor-password",
           },
         );
 
