@@ -45,6 +45,7 @@ export default function AlterarPasswordMCPage() {
   const [concluido, setConcluido] = useState(false);
   const [conviteSuporte, setConviteSuporte] = useState(false);
   const [suporteAtivado, setSuporteAtivado] = useState(false);
+  const [perfilMcId, setPerfilMcId] = useState("");
   const [erro, setErro] = useState("");
 
   useEffect(() => {
@@ -87,9 +88,11 @@ export default function AlterarPasswordMCPage() {
         // O link recebido tem prioridade sobre uma sessão de
         // Suporte Regional ou de outra conta já aberta no navegador.
         if (codigo) {
-          const { error } =
-            await supabase.auth.exchangeCodeForSession(codigo);
-          if (error) throw error;
+          // O cliente Supabase processa automaticamente o callback PKCE
+          // durante a inicialização (detectSessionInUrl=true).
+          // Tentar trocar o mesmo código aqui uma segunda vez invalida
+          // a ligação porque os códigos PKCE só podem ser usados uma vez.
+          // getSession() abaixo aguarda essa inicialização.
         } else if (tokenHash && (tipoLink === "recovery" || tipoLink === "invite")) {
           const { error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
@@ -139,6 +142,7 @@ export default function AlterarPasswordMCPage() {
               "A sessão aberta não está associada ao teu perfil de MC nem a um convite de suporte válido.",
             );
           }
+          if (componenteActivo) setPerfilMcId(perfisMC[0].id);
         }
 
         if (componenteActivo) {
@@ -288,6 +292,14 @@ export default function AlterarPasswordMCPage() {
                        : "A palavra-passe foi guardada. Confirma o teu acesso com a equipa IMIP.")
                   : "A tua nova palavra-passe está guardada. Já podes aceder ao teu perfil de MC."}
               </p>
+              {!conviteSuporte && perfilMcId && (
+                <a
+                  href={`/mcs/${perfilMcId}`}
+                  className="mt-5 inline-flex min-h-12 items-center rounded-lg bg-yellow-500 px-5 py-3 text-sm font-black text-black"
+                >
+                  ABRIR O MEU PERFIL
+                </a>
+              )}
               {conviteSuporte && suporteAtivado && (
                 <a
                   href="/organizacao/suporte"
@@ -309,6 +321,15 @@ export default function AlterarPasswordMCPage() {
                 {erro ||
                   "Este link já foi utilizado ou expirou. Contacta o suporte para receberes um novo email de acesso."}
               </p>
+              <p className="mt-4 text-sm text-zinc-300">
+                Se o acesso já foi ativado, entra com o teu email e palavra-passe. Não é necessário criar uma conta nova.
+              </p>
+              <a
+                href="/mcs"
+                className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-yellow-500/60 px-4 py-2 text-sm font-bold text-yellow-300"
+              >
+                VOLTAR AOS PERFIS DE MC
+              </a>
             </div>
           ) : (
             <form onSubmit={guardarNovaPassword} className="relative z-10 mt-8 space-y-5">
