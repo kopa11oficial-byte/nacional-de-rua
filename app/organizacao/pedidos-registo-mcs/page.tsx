@@ -17,7 +17,7 @@ export default function InscricoesMCs(){
    setCarregar(true);
    try{
     const t=await token();
-    const r=await fetch("/organizacao/pedidos-registo-mcs",{headers:{Authorization:`Bearer ${t}`},cache:"no-store"});
+    const r=await fetch("/api/suporte/registo-mcs",{headers:{Authorization:`Bearer ${t}`},cache:"no-store"});
     const d=await r.json().catch(()=>null);
     if(!r.ok)throw new Error(d?.erro??"Falha ao consultar pedidos.");
     setPedidos(d.pedidos??[]);setAutorizado(true);setErro("");
@@ -28,7 +28,7 @@ export default function InscricoesMCs(){
    setProcessar(true);setErro("");setMensagem("");
    try{
      const t=await token();
-     const r=await fetch("/organizacao/pedidos-registo-mcs",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${t}`},body:JSON.stringify(d)});
+     const r=await fetch("/api/suporte/registo-mcs",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${t}`},body:JSON.stringify(d)});
      const resultado=await r.json().catch(()=>null);
      if(!r.ok)throw new Error(resultado?.erro??"Operação não concluída.");
      setMensagem(resultado?.mensagem??"Operação concluída.");await atualizar();
