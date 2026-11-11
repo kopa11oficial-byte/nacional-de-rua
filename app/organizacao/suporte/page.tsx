@@ -79,6 +79,7 @@ const areas: {
 ];
 
 const cartoesGerais = [
+  { titulo: "INSCRIÇÕES E CRIAÇÃO DE MCs", descricao: "Aprova novos pedidos de inscrição e cria perfis MC manualmente, sem gerar duplicados.", destino: "/organizacao/pedidos-registo-mcs", categoria: "GESTÃO DE MCs" },
   {
     titulo: "PEDIDOS DE ACESSO DE MCs",
     descricao:
@@ -452,6 +453,7 @@ export default function SuportePage() {
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {[
                     { titulo: "APROVAR ACESSOS DE MCs", destino: "/organizacao/pedidos-mcs" },
+                    { titulo: "CRIAR MC / INSCRIÇÕES", destino: "/organizacao/pedidos-registo-mcs" },
                     { titulo: "APROVAR ORGANIZADORES", destino: "/organizacao/pedidos-organizadores" },
                     { titulo: "APROVAR NOVAS RODAS", destino: "/organizacao/pedidos-registo-rodas" },
                     { titulo: "CONFERIR RESULTADOS E PONTUAÇÕES", destino: "/organizacao/gerir-edicao" },
