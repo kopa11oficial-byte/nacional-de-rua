@@ -11,6 +11,7 @@ type Roda = {
   nome: string;
   cidade: string | null;
   distrito: string | null;
+  logo_url: string | null;
 };
 
 type ZonaId =
@@ -392,7 +393,7 @@ export default function RodasPage() {
           await supabase
             .from("rodas")
             .select(
-              "id,nome,cidade,distrito",
+              "id,nome,cidade,distrito,logo_url",
             )
             .eq("ativa", true)
             .order("nome");
@@ -889,21 +890,39 @@ export default function RodasPage() {
                             </span>
                           </div>
 
-                          <div className="mt-5 min-w-0">
+                          <div className="mt-5 flex min-w-0 items-center gap-4">
 
-                            <h3 className="break-words text-[clamp(1.25rem,2vw,1.6rem)] font-black uppercase leading-tight tracking-[0.02em] text-[#f0e6d1] group-hover:text-[#f0d58e]">
-                              {roda.nome}
-                            </h3>
+                            {roda.logo_url &&
+                              /^https:\/\/[^\s]+$/i.test(roda.logo_url) && (
+                                <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden border border-[#d6b56d]/40 bg-[#09140e] p-1 sm:h-[76px] sm:w-[76px]">
+                                  {/* Logótipo original, sem recorte nem alterações. */}
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={roda.logo_url}
+                                    alt={`Logótipo da roda ${roda.nome}`}
+                                    loading="lazy"
+                                    decoding="async"
+                                    referrerPolicy="no-referrer"
+                                    className="h-full w-full object-contain"
+                                  />
+                                </div>
+                              )}
 
-                            <p className="mt-2 text-xs leading-relaxed text-[#c7cdc5]">
-                              {[
-                                roda.cidade,
-                                roda.distrito,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ") ||
-                                "LOCALIDADE POR INDICAR"}
-                            </p>
+                            <div className="min-w-0">
+                              <h3 className="break-words text-[clamp(1.25rem,2vw,1.6rem)] font-black uppercase leading-tight tracking-[0.02em] text-[#f0e6d1] group-hover:text-[#f0d58e]">
+                                {roda.nome}
+                              </h3>
+
+                              <p className="mt-2 text-xs leading-relaxed text-[#c7cdc5]">
+                                {[
+                                  roda.cidade,
+                                  roda.distrito,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ") ||
+                                  "LOCALIDADE POR INDICAR"}
+                              </p>
+                            </div>
                           </div>
 
                           <span className="mt-5 flex items-center justify-between border-t border-white/10 pt-3 text-[11px] font-black uppercase tracking-[0.06em] text-[#d6b56d]">
