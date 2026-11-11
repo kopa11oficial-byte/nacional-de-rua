@@ -395,7 +395,7 @@ export default function AlterarPasswordMCPage() {
               >
                 VOLTAR AOS PERFIS DE MC
               </a>
-              <FormularioNovoLink />
+              {FormularioNovoLink()}
             </div>
           ) : (
             <form onSubmit={guardarNovaPassword} className="relative z-10 mt-8 space-y-5">
@@ -450,7 +450,7 @@ export default function AlterarPasswordMCPage() {
                 </p>
               )}
 
-              {erro && /expirou|sessão|link/i.test(erro) && <FormularioNovoLink />}
+              {erro && /expirou|sessão|link/i.test(erro) && {FormularioNovoLink()}}
 
               <button
                 type="submit"
