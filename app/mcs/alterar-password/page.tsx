@@ -47,6 +47,9 @@ export default function AlterarPasswordMCPage() {
   const [suporteAtivado, setSuporteAtivado] = useState(false);
   const [perfilMcId, setPerfilMcId] = useState("");
   const [erro, setErro] = useState("");
+  const [emailRecuperacao, setEmailRecuperacao] = useState("");
+  const [aPedirLink, setAPedirLink] = useState(false);
+  const [mensagemNovoLink, setMensagemNovoLink] = useState("");
 
   useEffect(() => {
     let componenteActivo = true;
@@ -173,6 +176,68 @@ export default function AlterarPasswordMCPage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  async function pedirNovoLink(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    if (aPedirLink) return;
+    setMensagemNovoLink("");
+    const email = emailRecuperacao.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) {
+      setMensagemNovoLink("Introduz um email válido.");
+      return;
+    }
+    setAPedirLink(true);
+    try {
+      // Enviar a recuperação para o mesmo domínio que pediu o email.
+      // Isso evita perder a sessão entre o domínio antigo e o domínio novo.
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/mcs/alterar-password`,
+      });
+      if (error) {
+        setMensagemNovoLink(
+          error.status === 429
+            ? "Foram feitos demasiados pedidos. Tenta mais tarde."
+            : "Não foi possível enviar o email agora. Tenta novamente mais tarde.",
+        );
+      } else {
+        setMensagemNovoLink(
+          "Se este email estiver associado a uma conta, receberás um novo link. Abre apenas o email mais recente no mesmo telemóvel.",
+        );
+      }
+    } catch {
+      setMensagemNovoLink("Não foi possível enviar o email. Tenta novamente mais tarde.");
+    } finally {
+      setAPedirLink(false);
+    }
+  }
+
+  function FormularioNovoLink() {
+    return (
+      <form onSubmit={pedirNovoLink} className="mt-6 space-y-3 border-t border-yellow-500/30 pt-5">
+        <p className="text-sm font-bold text-yellow-300">Precisas de um novo link?</p>
+        <label htmlFor="email-recuperacao" className="block text-sm text-zinc-200">Email associado à tua conta</label>
+        <input
+          id="email-recuperacao"
+          type="email"
+          required
+          autoComplete="email"
+          maxLength={254}
+          value={emailRecuperacao}
+          onChange={(evento) => setEmailRecuperacao(evento.target.value)}
+          className="min-h-12 w-full rounded-lg border border-zinc-600 bg-zinc-950 px-4 text-base text-white"
+          placeholder="O teu email"
+        />
+        <button
+          type="submit"
+          disabled={aPedirLink}
+          className="min-h-12 w-full rounded-lg border border-yellow-500 px-4 py-3 text-sm font-black text-yellow-300 disabled:opacity-50"
+        >
+          {aPedirLink ? "A ENVIAR..." : "RECEBER NOVO LINK"}
+        </button>
+        {mensagemNovoLink && <p role="status" className="text-sm text-zinc-200">{mensagemNovoLink}</p>}
+      </form>
+    );
+  }
 
   async function guardarNovaPassword(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -330,6 +395,7 @@ export default function AlterarPasswordMCPage() {
               >
                 VOLTAR AOS PERFIS DE MC
               </a>
+              <FormularioNovoLink />
             </div>
           ) : (
             <form onSubmit={guardarNovaPassword} className="relative z-10 mt-8 space-y-5">
@@ -383,6 +449,8 @@ export default function AlterarPasswordMCPage() {
                   {erro}
                 </p>
               )}
+
+              {erro && /expirou|sessão|link/i.test(erro) && <FormularioNovoLink />}
 
               <button
                 type="submit"
