@@ -485,6 +485,11 @@ export default function MCsPage() {
           </div>
         </header>
 
+        <section className="mt-6 flex flex-col gap-3 border border-[#d6b56d]/45 bg-[#142319] p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div><h2 className="text-lg font-black uppercase text-[#e8c76c]">O TEU NOME AINDA NÃO ESTÁ AQUI?</h2><p className="mt-1 text-sm text-[#f0e6d1]">Se és MC e não tens perfil no Nacional de Rua, pede a tua inscrição.</p></div>
+          <Link href="/mcs/inscricao" className="inline-flex min-h-12 items-center justify-center bg-[#e8c76c] px-6 py-3 text-center text-sm font-black uppercase text-[#101713]">SOU MC — QUERO INSCREVER-ME ↗</Link>
+        </section>
+
         {/* =====================================
             PESQUISA
             ===================================== */}
