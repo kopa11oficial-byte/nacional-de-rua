@@ -7,11 +7,11 @@ const path = require("node:path");
 const origem = path.resolve(".next/server/app");
 const destino = path.resolve("public");
 const rotas = [
-  "", "ranking", "rodas", "mcs", "final-nacional", "jurados",
+  "", "ranking", "rodas", "mcs", "mcs/inscricao", "final-nacional", "jurados",
   "apoios-e-patrocinios", "organizacao", "organizacao/login",
   "organizacao/suporte", "organizacao/pedidos-organizadores",
   "organizacao/pedidos-mcs", "organizacao/gerir-edicao",
-  "organizacao/participantes", "organizacao/comunicacao",
+  "organizacao/participantes", "organizacao/comunicacao", "organizacao/pedidos-registo-mcs",
   "organizacao/repor-password", "propostas"
 ];
 
