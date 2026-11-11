@@ -413,7 +413,43 @@ export default function RodasPage() {
           return;
         }
 
-        setRodas(data ?? []);
+        // O logótipo carregado pela organização fica na personalização
+        // da roda; o campo da tabela principal pode continuar vazio.
+        const lista = (data ?? []) as Roda[];
+        const ids = lista.map((roda) => roda.id);
+
+        if (ids.length === 0) {
+          setRodas([]);
+          return;
+        }
+
+        const { data: personalizacoes, error: erroLogos } =
+          await supabase
+            .from("roda_personalizacao")
+            .select("roda_id,logo_url")
+            .in("roda_id", ids);
+
+        if (!ativo) return;
+
+        if (erroLogos) {
+          console.warn("Não foi possível obter os logótipos das rodas:", erroLogos.code);
+          setRodas(lista);
+          return;
+        }
+
+        const logos = new Map(
+          (personalizacoes ?? []).map((item) => [
+            item.roda_id,
+            item.logo_url as string | null,
+          ]),
+        );
+
+        setRodas(
+          lista.map((roda) => ({
+            ...roda,
+            logo_url: logos.get(roda.id) || roda.logo_url || null,
+          })),
+        );
       } catch (falha) {
         if (!ativo) return;
 
