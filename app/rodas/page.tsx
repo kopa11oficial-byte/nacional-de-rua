@@ -12,6 +12,8 @@ type Roda = {
   cidade: string | null;
   distrito: string | null;
   logo_url: string | null;
+  cor_destaque: string | null;
+  cor_fundo: string | null;
 };
 
 type ZonaId =
@@ -222,6 +224,14 @@ const cidadesAlgarve = [
   de maiúsculas, acentos e pontuação.
 */
 
+// Só são aceites cores hexadecimais para que a personalização
+// seja segura e os cartões não percam legibilidade.
+function corHex(valor: string | null | undefined): string | null {
+  if (!valor) return null;
+  const cor = valor.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(cor) ? cor : null;
+}
+
 function normalizar(valor: string): string {
   return valor
     .normalize("NFD")
@@ -426,7 +436,7 @@ export default function RodasPage() {
         const { data: personalizacoes, error: erroLogos } =
           await supabase
             .from("roda_personalizacao")
-            .select("roda_id,logo_url")
+            .select("roda_id,logo_url,cor_destaque,cor_fundo")
             .in("roda_id", ids);
 
         if (!ativo) return;
@@ -437,17 +447,19 @@ export default function RodasPage() {
           return;
         }
 
-        const logos = new Map(
+        const visual = new Map(
           (personalizacoes ?? []).map((item) => [
             item.roda_id,
-            item.logo_url as string | null,
+            item,
           ]),
         );
 
         setRodas(
           lista.map((roda) => ({
             ...roda,
-            logo_url: logos.get(roda.id) || roda.logo_url || null,
+            logo_url: visual.get(roda.id)?.logo_url || roda.logo_url || null,
+            cor_destaque: corHex(visual.get(roda.id)?.cor_destaque),
+            cor_fundo: corHex(visual.get(roda.id)?.cor_fundo),
           })),
         );
       } catch (falha) {
@@ -900,19 +912,34 @@ export default function RodasPage() {
                         <Link
                           key={roda.id}
                           href={`/rodas/${roda.id}`}
-                          className="group relative flex min-h-[165px] min-w-0 flex-col justify-between overflow-hidden border border-[#d6b56d]/35 bg-[#0a110d]/95 p-5 transition-colors hover:border-[#f0d58e] hover:bg-[#15231a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0d58e]"
+                          className="group relative flex min-h-[165px] min-w-0 flex-col justify-between overflow-hidden border bg-[#0a110d]/95 p-5 transition-[transform,box-shadow,border-color] duration-300 motion-safe:hover:-translate-y-1 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0d58e]"
+                          style={{
+                            borderColor: roda.cor_destaque
+                              ? `${roda.cor_destaque}99`
+                              : "#d6b56d59",
+                            background: roda.cor_destaque || roda.cor_fundo
+                              ? `linear-gradient(115deg, rgba(4,10,7,.74), rgba(4,10,7,.9)), linear-gradient(135deg, ${roda.cor_fundo || "#0a110d"} 5%, ${roda.cor_destaque || "#d6b56d"} 180%)`
+                              : "#0a110d",
+                          }}
                         >
+                          {(roda.cor_destaque || roda.cor_fundo) && (
+                            <span
+                              aria-hidden="true"
+                              className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full opacity-20 blur-3xl transition-opacity duration-300 group-hover:opacity-40"
+                              style={{ backgroundColor: roda.cor_destaque || roda.cor_fundo || "#d6b56d" }}
+                            />
+                          )}
 
                           <span
                             aria-hidden="true"
                             className="absolute left-0 top-0 h-1 w-20"
                             style={{
                               backgroundColor:
-                                zona.cor,
+                                roda.cor_destaque || zona.cor,
                             }}
                           />
 
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="relative z-10 flex items-start justify-between gap-4">
 
                             <span className="text-[10px] font-black uppercase tracking-[0.1em] text-[#d6b56d]">
                               NACIONAL DE RUA
@@ -926,11 +953,12 @@ export default function RodasPage() {
                             </span>
                           </div>
 
-                          <div className="mt-5 flex min-w-0 items-center gap-4">
+                          <div className="relative z-10 mt-5 flex min-w-0 items-center gap-4">
 
                             {roda.logo_url &&
                               /^https:\/\/[^\s]+$/i.test(roda.logo_url) && (
-                                <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden border border-[#d6b56d]/40 bg-[#09140e] p-1 sm:h-[76px] sm:w-[76px]">
+                                <div className="relative z-10 flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden border bg-[#09140e] p-1 sm:h-[76px] sm:w-[76px]"
+                                style={{ borderColor: roda.cor_destaque || "#d6b56d66" }}>
                                   {/* Logótipo original, sem recorte nem alterações. */}
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
@@ -961,7 +989,7 @@ export default function RodasPage() {
                             </div>
                           </div>
 
-                          <span className="mt-5 flex items-center justify-between border-t border-white/10 pt-3 text-[11px] font-black uppercase tracking-[0.06em] text-[#d6b56d]">
+                          <span className="relative z-10 mt-5 flex items-center justify-between border-t border-white/10 pt-3 text-[11px] font-black uppercase tracking-[0.06em] text-[#d6b56d]">
                             VER RANKING E EDIÇÕES
 
                             <span
