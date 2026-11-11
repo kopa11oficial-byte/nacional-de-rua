@@ -191,7 +191,7 @@ export default function AlterarPasswordMCPage() {
       // Enviar a recuperação para o mesmo domínio que pediu o email.
       // Isso evita perder a sessão entre o domínio antigo e o domínio novo.
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/mcs/alterar-password`,
+        redirectTo: "https://www.nacionalderua.pt/mcs/alterar-password",
       });
       if (error) {
         setMensagemNovoLink(
@@ -450,7 +450,7 @@ export default function AlterarPasswordMCPage() {
                 </p>
               )}
 
-              {erro && /expirou|sessão|link/i.test(erro) && {FormularioNovoLink()}}
+              {erro && /expirou|sessão|link/i.test(erro) && FormularioNovoLink()}
 
               <button
                 type="submit"
