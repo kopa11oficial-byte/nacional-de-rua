@@ -58,3 +58,26 @@ jobs:
         run: node scripts/testar-historico-mcs.cjs
       - name: Compilar Next.js
         run: npm run build
+
+      - name: Diagnosticar acesso HTTP no domínio oficial (sem credenciais)
+        shell: bash
+        run: |
+          set +e
+          falhas=0
+          for volta in 1 2; do
+            for caminho in / /organizacao/suporte /organizacao/login /ranking /rodas/1c59231f-124b-4709-9d0d-4d80fad0833f /mcs/bf023ad8-f714-42f9-bc84-b4f6318c2b54; do
+              url="https://www.nacionalderua.pt${caminho}"
+              resposta=$(curl -sS -L --max-time 25 -o /tmp/nacionalderua-teste.html -w "%{http_code} %{time_total}" "$url")
+              codigo=$(echo "$resposta" | awk '{print $1}')
+              echo "TESTE OFICIAL - tentativa ${volta} - ${caminho} - HTTP e segundos: ${resposta}"
+              if [ "$codigo" != "200" ]; then
+                echo "Falha HTTP em ${caminho}"
+                if grep -q 'Worker exceeded resource limits' /tmp/nacionalderua-teste.html; then
+                  echo "ERRO 1102 REPRODUZIDO!"
+                fi
+                falhas=$((falhas+1))
+              fi
+            done
+          done
+          echo "Total falhas site oficial: ${falhas}"
+          test "$falhas" -eq 0
