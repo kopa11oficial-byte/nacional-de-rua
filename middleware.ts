@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 // Suspensão pública temporária do Nacional de Rua.
 // Para reativar o site, mudar para false e republicar.
-const EM_MANUTENCAO = true;
+const EM_MANUTENCAO = false;
 
 const paginaManutencao = `<!doctype html>
 <html lang="pt-PT">
